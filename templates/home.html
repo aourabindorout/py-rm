@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Python Roadmap{% endblock %}
+
+{% block body %}
+<!-- Top Navigation Bar -->
+<header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">🐍</span>
+            <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                py-rm
+            </span>
+            <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Python Roadmap
+            </span>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 text-sm text-slate-300">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-mono text-xs bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700/60">
+                    {{ current_user.username }}
+                </span>
+            </div>
+            <form method="POST" action="/logout" class="inline">
+                <button 
+                    type="submit"
+                    class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                >
+                    Log Out
+                </button>
+            </form>
+        </div>
+    </div>
+</header>
+
+<!-- Main Container -->
+<main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-center items-center text-center">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 text-4xl mb-6 shadow-xl shadow-emerald-500/10">
+        👋
+    </div>
+
+    <h1 class="text-5xl sm:text-6xl font-extrabold tracking-tight text-white mb-4">
+        Hello!
+    </h1>
+
+    <p class="text-lg sm:text-xl text-slate-300 max-w-xl mx-auto leading-relaxed mb-8">
+        Welcome to your personal Python learning space, <span class="font-semibold text-emerald-400">{{ current_user.username }}</span>.
+    </p>
+
+    <!-- Roadmap Placeholder Card -->
+    <div class="w-full max-w-2xl bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-left backdrop-blur-sm shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>🚀</span> Next Up: The Curriculum
+            </h2>
+            <span class="text-xs font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                Phase 1 Ready
+            </span>
+        </div>
+        <p class="text-sm text-slate-400 leading-relaxed mb-6">
+            Authentication is verified and deployed. Topics, interactive video lessons, progress checklists, and quizzes are being hooked up next!
+        </p>
+
+        <div class="space-y-3 font-mono text-xs">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-300">
+                <span class="text-emerald-400">✓</span>
+                <span>Protected routing & session security</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-300">
+                <span class="text-emerald-400">✓</span>
+                <span>Rate-limiting & anti-abuse guardrails</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-400">
+                <span class="text-amber-400">⏳</span>
+                <span>Python core modules, YouTube video embeds & quizzes</span>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
