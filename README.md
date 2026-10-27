@@ -3,7 +3,7 @@
 > **I made this to help my brother learn Python.**  
 > **Only users created by me can login.**
 
-**Live URL:** `<>` *(We'll fill this in after initial deployment)*
+**Live URL:** [https://learn-python.cloud.run](https://learn-python.cloud.run)
 
 ---
 
@@ -44,10 +44,12 @@ Since the login page is the sole entry point exposed to the public internet, gua
 
 ### 2. Application-Level Rate Limiting (`Flask-Limiter`)
 - **`POST /login` (Brute-Force & Credential Stuffing Guard)**:
-  - Capped at **5 attempts per minute per IP address**.
+  - **3 attempts per minute per IP address**.
+  - **15 attempts per minute overall** across all visitors.
   - Subsequent requests receive an HTTP `429 Too Many Requests` status code with a cooldown period.
 - **`GET /login` (Request Flood Guard)**:
-  - Capped at **30 requests per minute per IP address** to block automated crawlers and scrapers from hitting the server repeatedly.
+  - **3 requests per minute per IP address**.
+  - **25 requests per minute overall** across all visitors.
 
 ### 3. CPU Exhaustion & Timing Attack Prevention
 - Passwords are encrypted using **bcrypt** with a calibrated cost factor.

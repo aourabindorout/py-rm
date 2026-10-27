@@ -1,5 +1,5 @@
 import unittest
-from app import app
+from app import app, limiter
 from db import init_db, create_or_update_user
 
 
@@ -7,10 +7,14 @@ class AuthTestCase(unittest.TestCase):
     def setUp(self):
         app.config["TESTING"] = True
         app.config["WTF_CSRF_ENABLED"] = False
+        limiter.reset()
         self.client = app.test_client()
         with app.app_context():
             init_db()
             create_or_update_user("tester", "mypassword123")
+
+    def tearDown(self):
+        limiter.reset()
 
     def test_unauthenticated_redirects_to_login(self):
         response = self.client.get("/")
@@ -57,7 +61,54 @@ class AuthTestCase(unittest.TestCase):
         res_after = self.client.get("/")
         self.assertEqual(res_after.status_code, 302)
 
+    def test_rate_limit_per_ip_get(self):
+        # Limit is 3 per minute per IP
+        for _ in range(3):
+            res = self.client.get("/login", environ_base={"REMOTE_ADDR": "10.0.0.1"})
+            self.assertEqual(res.status_code, 200)
+
+        # 4th should be 429
+        res = self.client.get("/login", environ_base={"REMOTE_ADDR": "10.0.0.1"})
+        self.assertEqual(res.status_code, 429)
+        self.assertIn(b"Too Many Requests", res.data)
+
+    def test_rate_limit_per_ip_post(self):
+        # Limit is 3 per minute per IP
+        for _ in range(3):
+            res = self.client.post(
+                "/login",
+                data={"username": "tester", "password": "bad"},
+                environ_base={"REMOTE_ADDR": "10.0.0.2"},
+            )
+            self.assertEqual(res.status_code, 302)
+
+        # 4th should be 429
+        res = self.client.post(
+            "/login",
+            data={"username": "tester", "password": "bad"},
+            environ_base={"REMOTE_ADDR": "10.0.0.2"},
+        )
+        self.assertEqual(res.status_code, 429)
+        self.assertIn(b"Too Many Requests", res.data)
+
+    def test_rate_limit_global_post(self):
+        # Limit is 15 overall per minute
+        for i in range(15):
+            res = self.client.post(
+                "/login",
+                data={"username": "tester", "password": "bad"},
+                environ_base={"REMOTE_ADDR": f"192.168.1.{i+1}"},
+            )
+            self.assertEqual(res.status_code, 302)
+
+        # 16th across different IP should hit global limit 429
+        res = self.client.post(
+            "/login",
+            data={"username": "tester", "password": "bad"},
+            environ_base={"REMOTE_ADDR": "192.168.1.99"},
+        )
+        self.assertEqual(res.status_code, 429)
+
 
 if __name__ == "__main__":
     unittest.main()
-

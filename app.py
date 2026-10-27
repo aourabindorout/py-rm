@@ -46,13 +46,7 @@ limiter = Limiter(
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    return (
-        render_template(
-            "base.html",
-        ),
-        429,
-        {"Content-Type": "text/html; charset=utf-8"},
-    )
+    return render_template("429.html"), 429
 
 
 # Whitelisted endpoints that unauthenticated users can access
@@ -83,8 +77,10 @@ def home():
 
 
 @app.route("/login", methods=["GET", "POST"])
-@limiter.limit("30 per minute", methods=["GET"])
-@limiter.limit("5 per minute", methods=["POST"])
+@limiter.limit("3 per minute", key_func=get_remote_address, methods=["GET"])
+@limiter.limit("25 per minute", key_func=lambda: "global_get_login", methods=["GET"])
+@limiter.limit("3 per minute", key_func=get_remote_address, methods=["POST"])
+@limiter.limit("15 per minute", key_func=lambda: "global_post_login", methods=["POST"])
 def login():
     # If already logged in, send directly to home
     if session.get("user_id"):
