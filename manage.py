@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import getpass
-from db import init_db, create_or_update_user, get_connection
+from db import init_db, create_or_update_user, get_connection, get_firestore_client
 
 
 def print_help():
@@ -49,6 +49,19 @@ def cmd_create_user(args):
 
 def cmd_list_users():
     init_db()
+    fs = get_firestore_client()
+    if fs:
+        docs = list(fs.collection("users").stream())
+        if not docs:
+            print("No users found in Firestore.")
+            return
+        print(f"{'Username':<20} {'Created At'}")
+        print("-" * 45)
+        for doc in docs:
+            data = doc.to_dict()
+            print(f"{data.get('username', doc.id):<20} {data.get('created_at', '-')}")
+        return
+
     with get_connection() as conn:
         cursor = conn.execute("SELECT id, username, created_at FROM users ORDER BY id ASC")
         rows = cursor.fetchall()

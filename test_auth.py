@@ -174,5 +174,37 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 429)
 
 
+    def test_progress_tracking(self):
+        from db import (
+            get_user_progress,
+            update_checklist_item,
+            update_topic_completion,
+            save_quiz_result,
+        )
+
+        # Initial progress should be empty default
+        prog = get_user_progress("tester")
+        self.assertEqual(prog["completed_topics"], [])
+        self.assertEqual(prog["checklist"], {})
+        self.assertEqual(prog["quiz_scores"], {})
+
+        # 1. Update checklist item
+        update_checklist_item("tester", "intro_video_1", True)
+        prog = get_user_progress("tester")
+        self.assertTrue(prog["checklist"].get("intro_video_1"))
+
+        # 2. Complete a topic
+        update_topic_completion("tester", "variables", True)
+        prog = get_user_progress("tester")
+        self.assertIn("variables", prog["completed_topics"])
+
+        # 3. Save quiz result
+        save_quiz_result("tester", "quiz_variables", score=5, total=5, passed=True)
+        prog = get_user_progress("tester")
+        self.assertIn("quiz_variables", prog["quiz_scores"])
+        self.assertEqual(prog["quiz_scores"]["quiz_variables"]["score"], 5)
+        self.assertTrue(prog["quiz_scores"]["quiz_variables"]["passed"])
+
+
 if __name__ == "__main__":
     unittest.main()
