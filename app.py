@@ -8,6 +8,7 @@ from flask import (
     session,
     flash,
     Response,
+    g,
 )
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -17,6 +18,9 @@ from db import (
     init_db,
     verify_user,
     seed_default_user_from_env,
+    create_session,
+    validate_and_refresh_session,
+    delete_session,
 )
 
 app = Flask(__name__)
@@ -62,17 +66,25 @@ def enforce_authentication():
     if request.path in PUBLIC_PATHS:
         return None
 
-    # Redirect unauthenticated traffic directly to /login
-    if not session.get("user_id"):
+    token = session.get("session_token")
+    if not token:
         return redirect(url_for("login"))
+
+    user = validate_and_refresh_session(
+        token,
+        user_agent=request.headers.get("User-Agent", ""),
+    )
+    if not user:
+        session.clear()
+        flash("Your session has expired or was terminated. Please log in again.", "warning")
+        return redirect(url_for("login"))
+
+    g.current_user = user
 
 
 @app.route("/")
 def home():
-    user = {
-        "id": session.get("user_id"),
-        "username": session.get("username", "Learner"),
-    }
+    user = getattr(g, "current_user", None) or {"username": "Learner"}
     return render_template("home.html", current_user=user)
 
 
@@ -82,9 +94,17 @@ def home():
 @limiter.limit("3 per minute", key_func=get_remote_address, methods=["POST"])
 @limiter.limit("15 per minute", key_func=lambda: "global_post_login", methods=["POST"])
 def login():
-    # If already logged in, send directly to home
-    if session.get("user_id"):
-        return redirect(url_for("home"))
+    # If already holding a valid server-side session, skip login
+    token = session.get("session_token")
+    if token:
+        user = validate_and_refresh_session(
+            token,
+            user_agent=request.headers.get("User-Agent", ""),
+        )
+        if user:
+            return redirect(url_for("home"))
+        else:
+            session.clear()
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -93,8 +113,12 @@ def login():
         user = verify_user(username, password)
         if user:
             session.clear()
-            session["user_id"] = user["id"]
-            session["username"] = user["username"]
+            token = create_session(
+                user_id=user["id"],
+                user_agent=request.headers.get("User-Agent", ""),
+                ip_address=request.remote_addr or "",
+            )
+            session["session_token"] = token
             flash(f"Welcome back, {user['username']}!", "success")
             return redirect(url_for("home"))
         else:
@@ -106,6 +130,9 @@ def login():
 
 @app.route("/logout", methods=["POST"])
 def logout():
+    token = session.get("session_token")
+    if token:
+        delete_session(token)
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
@@ -125,4 +152,3 @@ with app.app_context():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=False)
-
