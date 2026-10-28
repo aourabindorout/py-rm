@@ -145,8 +145,11 @@ def healthz():
 
 # Ensure database and seeds are initialized when app starts
 with app.app_context():
-    init_db()
-    seed_default_user_from_env()
+    try:
+        init_db()
+        seed_default_user_from_env()
+    except Exception as e:
+        app.logger.error("Startup DB initialization warning: %s", e)
 
 
 if __name__ == "__main__":

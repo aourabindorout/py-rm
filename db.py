@@ -5,7 +5,7 @@ import secrets
 import hashlib
 import sqlite3
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from werkzeug.security import generate_password_hash, check_password_hash
 
 logger = logging.getLogger(__name__)
@@ -18,49 +18,42 @@ INACTIVITY_TIMEOUT_SECONDS = int(os.environ.get("SESSION_INACTIVITY_TIMEOUT_SECO
 
 # Global Firestore client cache
 _firestore_client = None
-_firestore_checked = False
-
-
-def is_firestore_enabled() -> bool:
-    """
-    Returns True if running on Cloud Run (K_SERVICE is set) or explicitly enabled.
-    Falls back to SQLite if USE_SQLITE is true or credentials are not found.
-    """
-    global _firestore_client, _firestore_checked
-
-    if os.environ.get("USE_SQLITE", "").lower() in ("1", "true", "yes"):
-        return False
-
-    should_use = (
-        os.environ.get("USE_FIRESTORE", "").lower() in ("1", "true", "yes")
-        or bool(os.environ.get("K_SERVICE"))
-        or bool(os.environ.get("GOOGLE_CLOUD_PROJECT"))
-    )
-
-    if not should_use:
-        return False
-
-    if not _firestore_checked:
-        _firestore_checked = True
-        try:
-            from google.cloud import firestore
-            _firestore_client = firestore.Client()
-            logger.info("Successfully connected to Google Cloud Firestore.")
-        except Exception as e:
-            logger.warning("Firestore connection failed (%s: %s). Falling back to SQLite.", type(e).__name__, e)
-            _firestore_client = None
-
-    return _firestore_client is not None
+_firestore_initialized = False
 
 
 def get_firestore_client():
-    if is_firestore_enabled():
-        return _firestore_client
-    return None
+    """
+    Returns an initialized Firestore client if running in GCP and reachable.
+    Gracefully returns None if credentials are missing or disabled.
+    """
+    global _firestore_client, _firestore_initialized
+
+    if os.environ.get("USE_SQLITE", "").lower() in ("1", "true", "yes"):
+        return None
+
+    if not _firestore_initialized:
+        _firestore_initialized = True
+        should_use = (
+            os.environ.get("USE_FIRESTORE", "").lower() in ("1", "true", "yes")
+            or bool(os.environ.get("K_SERVICE"))
+            or bool(os.environ.get("GOOGLE_CLOUD_PROJECT"))
+        )
+        if should_use:
+            try:
+                from google.cloud import firestore
+                # Try getting project explicitly from env if present
+                project = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+                _firestore_client = firestore.Client(project=project) if project else firestore.Client()
+                logger.info("Firestore client initialized successfully.")
+            except Exception as e:
+                logger.warning("Could not initialize Firestore client (%s: %s). Falling back to SQLite.", type(e).__name__, e)
+                _firestore_client = None
+
+    return _firestore_client
 
 
 # ---------------------------------------------------------
-# SQLite Helpers (Local Development & Fallback)
+# SQLite Helpers (Always Available as Resilient Fallback)
 # ---------------------------------------------------------
 
 def get_db_path() -> str:
@@ -76,10 +69,7 @@ def get_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
 
 
 def init_db(db_path: Optional[str] = None) -> None:
-    if is_firestore_enabled():
-        # Firestore collections are schemaless and auto-created on document insert
-        return
-
+    """Always ensure SQLite schema is ready as a reliable fallback."""
     path = db_path or get_db_path()
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with get_connection(path) as conn:
@@ -127,7 +117,7 @@ def init_db(db_path: Optional[str] = None) -> None:
 # ---------------------------------------------------------
 
 def create_or_update_user(username: str, password: str, db_path: Optional[str] = None) -> bool:
-    """Create a new user or update password if the user already exists."""
+    """Create a new user or update password with automatic Firestore -> SQLite fallback."""
     clean_username = username.strip().lower()
     if not clean_username or not password:
         raise ValueError("Username and password must not be empty.")
@@ -137,17 +127,21 @@ def create_or_update_user(username: str, password: str, db_path: Optional[str] =
 
     fs = get_firestore_client()
     if fs:
-        user_ref = fs.collection("users").document(clean_username)
-        user_ref.set(
-            {
-                "username": clean_username,
-                "password_hash": password_hash,
-                "created_at": now,
-            },
-            merge=True,
-        )
-        return True
+        try:
+            user_ref = fs.collection("users").document(clean_username)
+            user_ref.set(
+                {
+                    "username": clean_username,
+                    "password_hash": password_hash,
+                    "created_at": now,
+                },
+                merge=True,
+            )
+            return True
+        except Exception as e:
+            logger.error("Firestore error in create_or_update_user: %s. Falling back to SQLite.", e)
 
+    # SQLite fallback
     path = db_path or get_db_path()
     with get_connection(path) as conn:
         conn.execute(
@@ -169,11 +163,14 @@ def get_user_by_username(username: str, db_path: Optional[str] = None) -> Option
 
     fs = get_firestore_client()
     if fs:
-        doc = fs.collection("users").document(clean_username).get()
-        if doc.exists:
-            data = doc.to_dict()
-            return {"id": clean_username, "username": data["username"], "password_hash": data["password_hash"]}
-        return None
+        try:
+            doc = fs.collection("users").document(clean_username).get()
+            if doc.exists:
+                data = doc.to_dict()
+                return {"id": clean_username, "username": data["username"], "password_hash": data["password_hash"]}
+            return None
+        except Exception as e:
+            logger.error("Firestore error in get_user_by_username: %s. Falling back to SQLite.", e)
 
     path = db_path or get_db_path()
     with get_connection(path) as conn:
@@ -212,7 +209,7 @@ def create_session(
     ip_address: str = "",
     db_path: Optional[str] = None,
 ) -> str:
-    """Generate and store a new active session token."""
+    """Generate and store a new active session token with fallback."""
     session_token = secrets.token_urlsafe(32)
     now = int(time.time())
     ua_hash = _hash_user_agent(user_agent)
@@ -220,18 +217,21 @@ def create_session(
 
     fs = get_firestore_client()
     if fs:
-        session_ref = fs.collection("sessions").document(session_token)
-        session_ref.set(
-            {
-                "session_token": session_token,
-                "user_id": username,
-                "user_agent_hash": ua_hash,
-                "ip_address": ip_address,
-                "created_at": now,
-                "last_active_at": now,
-            }
-        )
-        return session_token
+        try:
+            session_ref = fs.collection("sessions").document(session_token)
+            session_ref.set(
+                {
+                    "session_token": session_token,
+                    "user_id": username,
+                    "user_agent_hash": ua_hash,
+                    "ip_address": ip_address,
+                    "created_at": now,
+                    "last_active_at": now,
+                }
+            )
+            return session_token
+        except Exception as e:
+            logger.error("Firestore error in create_session: %s. Falling back to SQLite.", e)
 
     path = db_path or get_db_path()
     with get_connection(path) as conn:
@@ -252,13 +252,6 @@ def validate_and_refresh_session(
     user_agent: str = "",
     db_path: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    """
-    Validate session token:
-    1. Checks if session exists in DB.
-    2. Checks if inactivity timeout (10 mins) has elapsed.
-    3. Checks User-Agent fingerprint match.
-    4. Refreshes last_active_at if valid.
-    """
     if not session_token:
         return None
 
@@ -266,32 +259,34 @@ def validate_and_refresh_session(
     fs = get_firestore_client()
 
     if fs:
-        doc_ref = fs.collection("sessions").document(session_token)
-        doc = doc_ref.get()
-        if not doc.exists:
+        try:
+            doc_ref = fs.collection("sessions").document(session_token)
+            doc = doc_ref.get()
+            if doc.exists:
+                data = doc.to_dict()
+                last_active = data.get("last_active_at", 0)
+
+                # 1. Inactivity check (10 minutes)
+                if (now - last_active) > INACTIVITY_TIMEOUT_SECONDS:
+                    doc_ref.delete()
+                    return None
+
+                # 2. Browser fingerprint check
+                stored_ua_hash = data.get("user_agent_hash", "")
+                if stored_ua_hash and user_agent:
+                    current_ua_hash = _hash_user_agent(user_agent)
+                    if current_ua_hash != stored_ua_hash:
+                        doc_ref.delete()
+                        return None
+
+                # 3. Refresh activity timestamp
+                doc_ref.update({"last_active_at": now})
+                return {"user_id": data["user_id"], "username": data["user_id"]}
             return None
+        except Exception as e:
+            logger.error("Firestore error in validate_and_refresh_session: %s. Falling back to SQLite.", e)
 
-        data = doc.to_dict()
-        last_active = data.get("last_active_at", 0)
-
-        # 1. Inactivity check (10 minutes)
-        if (now - last_active) > INACTIVITY_TIMEOUT_SECONDS:
-            doc_ref.delete()
-            return None
-
-        # 2. Browser/Device fingerprint check
-        stored_ua_hash = data.get("user_agent_hash", "")
-        if stored_ua_hash and user_agent:
-            current_ua_hash = _hash_user_agent(user_agent)
-            if current_ua_hash != stored_ua_hash:
-                doc_ref.delete()
-                return None
-
-        # 3. Refresh activity timestamp
-        doc_ref.update({"last_active_at": now})
-        return {"user_id": data["user_id"], "username": data["user_id"]}
-
-    # Fallback to SQLite
+    # SQLite fallback
     path = db_path or get_db_path()
     with get_connection(path) as conn:
         cursor = conn.execute(
@@ -329,14 +324,16 @@ def validate_and_refresh_session(
 
 
 def delete_session(session_token: str, db_path: Optional[str] = None) -> None:
-    """Invalidate and remove an active session upon logout."""
     if not session_token:
         return
 
     fs = get_firestore_client()
     if fs:
-        fs.collection("sessions").document(session_token).delete()
-        return
+        try:
+            fs.collection("sessions").document(session_token).delete()
+            return
+        except Exception as e:
+            logger.error("Firestore error in delete_session: %s. Falling back to SQLite.", e)
 
     path = db_path or get_db_path()
     with get_connection(path) as conn:
@@ -345,15 +342,17 @@ def delete_session(session_token: str, db_path: Optional[str] = None) -> None:
 
 
 def delete_user_sessions(user_id: Any, db_path: Optional[str] = None) -> None:
-    """Terminate all sessions for a specific user (e.g. log out everywhere)."""
     username = str(user_id).strip().lower()
 
     fs = get_firestore_client()
     if fs:
-        sessions = fs.collection("sessions").where("user_id", "==", username).stream()
-        for s in sessions:
-            s.reference.delete()
-        return
+        try:
+            sessions = fs.collection("sessions").where("user_id", "==", username).stream()
+            for s in sessions:
+                s.reference.delete()
+            return
+        except Exception as e:
+            logger.error("Firestore error in delete_user_sessions: %s. Falling back to SQLite.", e)
 
     path = db_path or get_db_path()
     with get_connection(path) as conn:
@@ -362,7 +361,7 @@ def delete_user_sessions(user_id: Any, db_path: Optional[str] = None) -> None:
 
 
 # ---------------------------------------------------------
-# Progress & Roadmap State (Checklists, Quizzes)
+# Progress & Roadmap State
 # ---------------------------------------------------------
 
 DEFAULT_PROGRESS = {
@@ -373,20 +372,22 @@ DEFAULT_PROGRESS = {
 
 
 def get_user_progress(username: str, db_path: Optional[str] = None) -> Dict[str, Any]:
-    """Retrieve learning progress for a user."""
     clean_username = username.strip().lower()
 
     fs = get_firestore_client()
     if fs:
-        doc = fs.collection("progress").document(clean_username).get()
-        if doc.exists:
-            data = doc.to_dict()
-            return {
-                "completed_topics": data.get("completed_topics", []),
-                "checklist": data.get("checklist", {}),
-                "quiz_scores": data.get("quiz_scores", {}),
-            }
-        return dict(DEFAULT_PROGRESS)
+        try:
+            doc = fs.collection("progress").document(clean_username).get()
+            if doc.exists:
+                data = doc.to_dict()
+                return {
+                    "completed_topics": data.get("completed_topics", []),
+                    "checklist": data.get("checklist", {}),
+                    "quiz_scores": data.get("quiz_scores", {}),
+                }
+            return dict(DEFAULT_PROGRESS)
+        except Exception as e:
+            logger.error("Firestore error in get_user_progress: %s. Falling back to SQLite.", e)
 
     path = db_path or get_db_path()
     with get_connection(path) as conn:
@@ -406,7 +407,6 @@ def get_user_progress(username: str, db_path: Optional[str] = None) -> Dict[str,
 
 
 def save_user_progress(username: str, progress_data: Dict[str, Any], db_path: Optional[str] = None) -> None:
-    """Save user progress payload."""
     clean_username = username.strip().lower()
     now = int(time.time())
 
@@ -419,8 +419,11 @@ def save_user_progress(username: str, progress_data: Dict[str, Any], db_path: Op
 
     fs = get_firestore_client()
     if fs:
-        fs.collection("progress").document(clean_username).set(clean_data, merge=True)
-        return
+        try:
+            fs.collection("progress").document(clean_username).set(clean_data, merge=True)
+            return
+        except Exception as e:
+            logger.error("Firestore error in save_user_progress: %s. Falling back to SQLite.", e)
 
     path = db_path or get_db_path()
     with get_connection(path) as conn:
@@ -436,14 +439,12 @@ def save_user_progress(username: str, progress_data: Dict[str, Any], db_path: Op
 
 
 def update_checklist_item(username: str, item_id: str, completed: bool, db_path: Optional[str] = None) -> None:
-    """Toggle a specific checklist milestone."""
     progress = get_user_progress(username, db_path=db_path)
     progress["checklist"][item_id] = completed
     save_user_progress(username, progress, db_path=db_path)
 
 
 def update_topic_completion(username: str, topic_id: str, completed: bool, db_path: Optional[str] = None) -> None:
-    """Mark a topic as completed or uncompleted."""
     progress = get_user_progress(username, db_path=db_path)
     topics = set(progress.get("completed_topics", []))
     if completed:
@@ -462,7 +463,6 @@ def save_quiz_result(
     passed: bool,
     db_path: Optional[str] = None,
 ) -> None:
-    """Record score and timestamp for a quiz attempt."""
     progress = get_user_progress(username, db_path=db_path)
     progress["quiz_scores"][quiz_id] = {
         "score": score,
@@ -474,9 +474,12 @@ def save_quiz_result(
 
 
 def seed_default_user_from_env() -> None:
-    """Auto-seed admin user if specified in environment variables."""
+    """Auto-seed admin user if specified in environment variables safely."""
     admin_user = os.environ.get("ADMIN_USERNAME")
     admin_pass = os.environ.get("ADMIN_PASSWORD")
     if admin_user and admin_pass:
-        create_or_update_user(admin_user, admin_pass)
-        print(f"Auto-seeded user '{admin_user}' from environment.")
+        try:
+            create_or_update_user(admin_user, admin_pass)
+            print(f"Auto-seeded user '{admin_user}' from environment.", flush=True)
+        except Exception as e:
+            logger.error("Failed to auto-seed user from environment: %s", e)

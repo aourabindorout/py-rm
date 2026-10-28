@@ -17,6 +17,11 @@ class AuthTestCase(unittest.TestCase):
         self.client = app.test_client()
         with app.app_context():
             init_db()
+            with get_connection() as conn:
+                conn.execute("DELETE FROM users;")
+                conn.execute("DELETE FROM sessions;")
+                conn.execute("DELETE FROM progress;")
+                conn.commit()
             create_or_update_user("tester", "mypassword123")
 
     def tearDown(self):
