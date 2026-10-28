@@ -24,6 +24,7 @@
                 </span>
             </div>
             <form method="POST" action="/logout" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button 
                     type="submit"
                     class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"

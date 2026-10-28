@@ -1,4 +1,3 @@
-import time
 import unittest
 from app import app, limiter
 from db import (
@@ -56,7 +55,26 @@ class AuthTestCase(unittest.TestCase):
         self.assertIn(b"Hello!", response.data)
         self.assertIn(b"tester", response.data)
 
-    def test_logout_invalidates_server_session(self):
+    def test_logout(self):
+        # 1. Log in
+        self.client.post(
+            "/login",
+            data={"username": "tester", "password": "mypassword123"},
+            follow_redirects=True,
+        )
+        with self.client.session_transaction() as sess:
+            csrf = sess.get("csrf_token")
+
+        # 2. Log out with valid CSRF token
+        response = self.client.post("/logout", data={"csrf_token": csrf}, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"You have been logged out", response.data)
+
+        # Accessing / again should redirect
+        res_after = self.client.get("/")
+        self.assertEqual(res_after.status_code, 302)
+
+    def test_logout_csrf_protection(self):
         # 1. Log in
         self.client.post(
             "/login",
@@ -64,12 +82,35 @@ class AuthTestCase(unittest.TestCase):
             follow_redirects=True,
         )
 
+        # 2. Attempt logout without CSRF token (simulating external attacker form)
+        res_no_csrf = self.client.post("/logout")
+        self.assertEqual(res_no_csrf.status_code, 403)
+
+        # 3. Attempt logout with forged/wrong CSRF token
+        res_bad_csrf = self.client.post("/logout", data={"csrf_token": "forged_token_12345"})
+        self.assertEqual(res_bad_csrf.status_code, 403)
+
+        # 4. User session should still be active and safe
+        res_home = self.client.get("/")
+        self.assertEqual(res_home.status_code, 200)
+        self.assertIn(b"Hello!", res_home.data)
+
+    def test_logout_invalidates_server_session(self):
+        # 1. Log in
+        self.client.post(
+            "/login",
+            data={"username": "tester", "password": "mypassword123"},
+            follow_redirects=True,
+        )
+        with self.client.session_transaction() as sess:
+            csrf = sess.get("csrf_token")
+
         # 2. Extract cookie before logout (simulating friend capturing the session)
         session_cookie = self.client.get_cookie("session")
         self.assertIsNotNone(session_cookie)
 
         # 3. Legitimate user logs out
-        res = self.client.post("/logout", follow_redirects=True)
+        res = self.client.post("/logout", data={"csrf_token": csrf}, follow_redirects=True)
         self.assertEqual(res.status_code, 200)
         self.assertIn(b"You have been logged out", res.data)
 
@@ -130,6 +171,36 @@ class AuthTestCase(unittest.TestCase):
         res = attacker.get("/", headers={"User-Agent": ua_attacker}, follow_redirects=True)
         self.assertIn(b"Your session has expired or was terminated", res.data)
 
+    def test_missing_user_agent_blocks_replay(self):
+        # 1. Log in with legitimate browser User-Agent
+        ua_original = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+        self.client.post(
+            "/login",
+            data={"username": "tester", "password": "mypassword123"},
+            headers={"User-Agent": ua_original},
+            follow_redirects=True,
+        )
+
+        # 2. Save session cookie
+        session_cookie = self.client.get_cookie("session")
+        self.assertIsNotNone(session_cookie)
+
+        # 3. Attacker uses cookie using curl/script with EMPTY or OMITTED User-Agent
+        attacker = app.test_client()
+        attacker.set_cookie("session", session_cookie.value)
+
+        # Empty User-Agent
+        res = attacker.get("/", headers={"User-Agent": ""}, follow_redirects=True)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"Your session has expired or was terminated", res.data)
+
+        # Omitted User-Agent header completely
+        attacker2 = app.test_client()
+        attacker2.set_cookie("session", session_cookie.value)
+        res2 = attacker2.get("/", environ_base={"HTTP_USER_AGENT": ""}, follow_redirects=True)
+        self.assertEqual(res2.status_code, 200)
+        self.assertIn(b"Your session has expired or was terminated", res2.data)
+
     def test_rate_limit_per_ip_get(self):
         # Limit is 3 per minute per IP
         for _ in range(3):
@@ -178,7 +249,6 @@ class AuthTestCase(unittest.TestCase):
         )
         self.assertEqual(res.status_code, 429)
 
-
     def test_progress_tracking(self):
         from db import (
             get_user_progress,
@@ -187,7 +257,6 @@ class AuthTestCase(unittest.TestCase):
             save_quiz_result,
         )
 
-        # Initial progress should be empty default
         prog = get_user_progress("tester")
         self.assertEqual(prog["completed_topics"], [])
         self.assertEqual(prog["checklist"], {})

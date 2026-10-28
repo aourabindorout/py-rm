@@ -65,5 +65,6 @@ Since the login page is the sole entry point exposed to the public internet, gua
 ### 6. Server-Side Session Invalidation & Inactivity Timeout
 - **Instant Revocation on Logout**: Sessions are stored server-side with unique tokens. Clicking **Log Out** destroys the token in the database, ensuring any extracted or copied session cookies are instantly dead and cannot be reused (neutralizing replay attacks).
 - **10-Minute Inactivity Expiry**: Sessions auto-expire if no requests are made for 10 minutes.
-- **Device Fingerprint Binding**: The browser's User-Agent is hashed and validated against the session token to reject stolen tokens replayed on different browsers or devices.
+- **Strict Device Fingerprint Binding**: The browser's User-Agent is hashed and strictly validated against the session token. Requests omitting or spoofing the User-Agent are immediately terminated.
+- **CSRF-Protected State Mutations**: State-changing actions like logout require a cryptographically unique synchronizer CSRF token, protecting users from cross-site request forgery and forced-logout attacks.
 

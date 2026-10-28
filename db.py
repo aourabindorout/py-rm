@@ -271,10 +271,10 @@ def validate_and_refresh_session(
                     doc_ref.delete()
                     return None
 
-                # 2. Browser fingerprint check
+                # 2. Browser fingerprint check (strict: missing or mismatched User-Agent is rejected)
                 stored_ua_hash = data.get("user_agent_hash", "")
-                if stored_ua_hash and user_agent:
-                    current_ua_hash = _hash_user_agent(user_agent)
+                if stored_ua_hash:
+                    current_ua_hash = _hash_user_agent(user_agent) if user_agent else ""
                     if current_ua_hash != stored_ua_hash:
                         doc_ref.delete()
                         return None
@@ -307,9 +307,11 @@ def validate_and_refresh_session(
             conn.commit()
             return None
 
-        if row["user_agent_hash"] and user_agent:
-            current_ua_hash = _hash_user_agent(user_agent)
-            if current_ua_hash != row["user_agent_hash"]:
+        # 2. Browser fingerprint check (strict: missing or mismatched User-Agent is rejected)
+        stored_ua_hash = row["user_agent_hash"]
+        if stored_ua_hash:
+            current_ua_hash = _hash_user_agent(user_agent) if user_agent else ""
+            if current_ua_hash != stored_ua_hash:
                 conn.execute("DELETE FROM sessions WHERE session_token = ?;", (session_token,))
                 conn.commit()
                 return None

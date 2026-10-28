@@ -1,4 +1,5 @@
 import os
+import secrets
 from flask import (
     Flask,
     render_template,
@@ -9,6 +10,7 @@ from flask import (
     flash,
     Response,
     g,
+    abort,
 )
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -26,7 +28,8 @@ from db import (
 app = Flask(__name__)
 
 # Secret key for signing session cookies
-app.secret_key = os.environ.get("SECRET_KEY", "py-rm-dev-secret-key-change-in-prod")
+# Requires SECRET_KEY in production, or generates an ephemeral 256-bit cryptographic key
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
 # Session cookie security settings
 app.config.update(
@@ -46,6 +49,15 @@ limiter = Limiter(
     default_limits=["120 per minute"],
     storage_uri="memory://",
 )
+
+
+@app.context_processor
+def inject_csrf_token():
+    def get_csrf_token():
+        if "csrf_token" not in session:
+            session["csrf_token"] = secrets.token_hex(32)
+        return session["csrf_token"]
+    return dict(csrf_token=get_csrf_token)
 
 
 @app.errorhandler(429)
@@ -119,6 +131,7 @@ def login():
                 ip_address=request.remote_addr or "",
             )
             session["session_token"] = token
+            session["csrf_token"] = secrets.token_hex(32)
             flash(f"Welcome back, {user['username']}!", "success")
             return redirect(url_for("home"))
         else:
@@ -130,6 +143,12 @@ def login():
 
 @app.route("/logout", methods=["POST"])
 def logout():
+    # Verify CSRF token to prevent cross-site logout forgery
+    submitted_token = request.form.get("csrf_token", "")
+    session_csrf = session.get("csrf_token", "")
+    if not submitted_token or not session_csrf or not secrets.compare_digest(submitted_token, session_csrf):
+        abort(403)
+
     token = session.get("session_token")
     if token:
         delete_session(token)
