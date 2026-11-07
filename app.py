@@ -1,5 +1,6 @@
 import os
 import secrets
+from functools import wraps
 from flask import (
     Flask,
     render_template,
@@ -23,6 +24,9 @@ from db import (
     create_session,
     validate_and_refresh_session,
     delete_session,
+    create_or_update_user,
+    delete_user,
+    list_all_users_with_progress,
 )
 
 app = Flask(__name__)
@@ -129,6 +133,7 @@ def login():
                 user_id=user["id"],
                 user_agent=request.headers.get("User-Agent", ""),
                 ip_address=request.remote_addr or "",
+                is_superuser=user.get("is_superuser", False),
             )
             session["session_token"] = token
             session["csrf_token"] = secrets.token_hex(32)
@@ -139,6 +144,76 @@ def login():
             return redirect(url_for("login"))
 
     return render_template("login.html")
+
+
+def require_superuser(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user = getattr(g, "current_user", None)
+        if not user or not user.get("is_superuser"):
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route("/admin")
+@require_superuser
+def admin_dashboard():
+    users = list_all_users_with_progress()
+    user = getattr(g, "current_user", None)
+    return render_template("admin.html", current_user=user, users=users)
+
+
+@app.route("/admin/create-user", methods=["POST"])
+@require_superuser
+@limiter.limit("10 per minute", key_func=get_remote_address)
+def admin_create_user():
+    submitted_token = request.form.get("csrf_token", "")
+    session_csrf = session.get("csrf_token", "")
+    if not submitted_token or not session_csrf or not secrets.compare_digest(submitted_token, session_csrf):
+        abort(403)
+
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
+    is_superuser = request.form.get("is_superuser") == "on"
+
+    if not username or not password:
+        flash("Username and password cannot be empty.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        create_or_update_user(username, password, is_superuser=is_superuser)
+        role = "Superuser" if is_superuser else "Student"
+        flash(f"{role} '{username.lower()}' created successfully.", "success")
+    except Exception as e:
+        flash(f"Error creating user: {e}", "error")
+
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/delete-user", methods=["POST"])
+@require_superuser
+@limiter.limit("10 per minute", key_func=get_remote_address)
+def admin_delete_user():
+    submitted_token = request.form.get("csrf_token", "")
+    session_csrf = session.get("csrf_token", "")
+    if not submitted_token or not session_csrf or not secrets.compare_digest(submitted_token, session_csrf):
+        abort(403)
+
+    username = request.form.get("username", "").strip().lower()
+    current_username = g.current_user["username"].strip().lower()
+
+    if username == current_username:
+        flash("You cannot delete your own active superuser account.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        delete_user(username)
+        flash(f"User '{username}' and associated progress permanently deleted.", "info")
+    except Exception as e:
+        flash(f"Error deleting user: {e}", "error")
+
+    return redirect(url_for("admin_dashboard"))
 
 
 @app.route("/logout", methods=["POST"])

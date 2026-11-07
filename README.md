@@ -254,14 +254,25 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. User Management CLI
+### 2. User Management CLI & Superuser Provisioning
 ```bash
-# Create or update an account
+# Create a superuser account (Admin access to /admin dashboard)
+python manage.py create-user myadmin mypassword123 --superuser
+
+# Create or update a student account
 python manage.py create-user brother mypassword123
 
-# List existing accounts
+# Delete a user and cascade-delete their sessions and progress
+python manage.py delete-user brother
+
+# List existing accounts with their roles
 python manage.py list-users
 ```
+
+#### Production Auto-Seeding via Cloud Run Environment Variables:
+Set the following environment variables in Google Cloud Run to auto-seed your superuser account on startup:
+* `SUPERUSER_USERNAME="<your_admin_username>"`
+* `SUPERUSER_PASSWORD="<your_admin_password>"`
 
 ### 3. Run Locally
 ```bash

@@ -18,11 +18,24 @@
 
         <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2 text-sm text-slate-300">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="w-2 h-2 rounded-full {% if current_user.is_superuser %}bg-cyan-400{% else %}bg-emerald-500{% endif %} animate-pulse"></span>
                 <span class="font-mono text-xs bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700/60">
                     {{ current_user.username }}
                 </span>
+                {% if current_user.is_superuser %}
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                    Admin
+                </span>
+                {% endif %}
             </div>
+            {% if current_user.is_superuser %}
+            <a 
+                href="/admin" 
+                class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 transition-all flex items-center gap-1.5"
+            >
+                <span>⚡</span> Admin Dashboard
+            </a>
+            {% endif %}
             <form method="POST" action="/logout" class="inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button 

@@ -3,6 +3,7 @@ from app import app, limiter
 from db import (
     init_db,
     create_or_update_user,
+    delete_user,
     get_connection,
     INACTIVITY_TIMEOUT_SECONDS,
 )
@@ -16,15 +17,17 @@ class AuthTestCase(unittest.TestCase):
         self.client = app.test_client()
         with app.app_context():
             init_db()
-            with get_connection() as conn:
-                conn.execute("DELETE FROM users;")
-                conn.execute("DELETE FROM sessions;")
-                conn.execute("DELETE FROM progress;")
-                conn.commit()
-            create_or_update_user("tester", "mypassword123")
+            delete_user("tester")
+            delete_user("admin_tester")
+            delete_user("created_student")
+            create_or_update_user("tester", "mypassword123", is_superuser=False)
 
     def tearDown(self):
         limiter.reset()
+        with app.app_context():
+            delete_user("tester")
+            delete_user("admin_tester")
+            delete_user("created_student")
 
     def test_unauthenticated_redirects_to_login(self):
         response = self.client.get("/")
@@ -278,6 +281,78 @@ class AuthTestCase(unittest.TestCase):
         self.assertIn("quiz_variables", prog["quiz_scores"])
         self.assertEqual(prog["quiz_scores"]["quiz_variables"]["score"], 5)
         self.assertTrue(prog["quiz_scores"]["quiz_variables"]["passed"])
+
+    def test_student_blocked_from_admin(self):
+        # 1. Log in as regular student
+        self.client.post(
+            "/login",
+            data={"username": "tester", "password": "mypassword123"},
+            follow_redirects=True,
+        )
+
+        # 2. Attempt to access /admin -> should be 403 Forbidden
+        response = self.client.get("/admin")
+        self.assertEqual(response.status_code, 403)
+
+    def test_superuser_can_access_admin_and_manage_users(self):
+        # 1. Create superuser
+        create_or_update_user("admin_tester", "adminpass123", is_superuser=True)
+
+        # 2. Log in as superuser
+        login_res = self.client.post(
+            "/login",
+            data={"username": "admin_tester", "password": "adminpass123"},
+            follow_redirects=True,
+        )
+        self.assertEqual(login_res.status_code, 200)
+        self.assertIn(b"Admin Dashboard", login_res.data)
+
+        # 3. Access /admin
+        admin_res = self.client.get("/admin")
+        self.assertEqual(admin_res.status_code, 200)
+        self.assertIn(b"Registered Accounts", admin_res.data)
+
+        with self.client.session_transaction() as sess:
+            csrf = sess.get("csrf_token")
+
+        # 4. Superuser creates a new user via /admin/create-user
+        create_res = self.client.post(
+            "/admin/create-user",
+            data={"username": "created_student", "password": "studentpass", "csrf_token": csrf},
+            follow_redirects=True,
+        )
+        self.assertEqual(create_res.status_code, 200)
+        self.assertIn(b"created_student", create_res.data)
+
+        # 5. Superuser deletes the new user via /admin/delete-user
+        delete_res = self.client.post(
+            "/admin/delete-user",
+            data={"username": "created_student", "csrf_token": csrf},
+            follow_redirects=True,
+        )
+        self.assertEqual(delete_res.status_code, 200)
+        self.assertIn(b"permanently deleted", delete_res.data)
+
+    def test_superuser_cannot_delete_self(self):
+        # 1. Create and log in as superuser
+        create_or_update_user("admin_tester", "adminpass123", is_superuser=True)
+        self.client.post(
+            "/login",
+            data={"username": "admin_tester", "password": "adminpass123"},
+            follow_redirects=True,
+        )
+
+        with self.client.session_transaction() as sess:
+            csrf = sess.get("csrf_token")
+
+        # 2. Attempt to delete self
+        res = self.client.post(
+            "/admin/delete-user",
+            data={"username": "admin_tester", "csrf_token": csrf},
+            follow_redirects=True,
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"You cannot delete your own active superuser account", res.data)
 
 
 if __name__ == "__main__":

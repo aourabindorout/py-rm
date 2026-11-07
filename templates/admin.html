@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Python Roadmap{% endblock %}
+
+{% block body %}
+<!-- Top Navigation Bar -->
+<header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">🐍</span>
+            <a href="/" class="font-bold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent hover:opacity-90 transition-opacity">
+                py-rm
+            </a>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 flex items-center gap-1">
+                <span>⚡</span> Admin Dashboard
+            </span>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <a 
+                href="/" 
+                class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-all"
+            >
+                ← Back to Roadmap
+            </a>
+            <div class="flex items-center space-x-2 text-sm text-slate-300">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span class="font-mono text-xs bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700/60">
+                    {{ current_user.username }}
+                </span>
+            </div>
+            <form method="POST" action="/logout" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button 
+                    type="submit"
+                    class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                >
+                    Log Out
+                </button>
+            </form>
+        </div>
+    </div>
+</header>
+
+<!-- Main Dashboard Container -->
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Header Title -->
+    <div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+            <span>🛡️</span> User & Progress Management
+        </h1>
+        <p class="text-sm text-slate-400 mt-1">
+            Manage user accounts, grant privileges, and track student milestones.
+        </p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Users</div>
+            <div class="text-3xl font-extrabold text-white mt-2">{{ users|length }}</div>
+        </div>
+        <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Students</div>
+            <div class="text-3xl font-extrabold text-emerald-400 mt-2">
+                {{ users|rejectattr('is_superuser')|list|length }}
+            </div>
+        </div>
+        <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Superusers</div>
+            <div class="text-3xl font-extrabold text-cyan-400 mt-2">
+                {{ users|selectattr('is_superuser')|list|length }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        
+        <!-- Left: User Roster & Progress (2 Columns) -->
+        <div class="lg:col-span-2 space-y-4">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <span>👥</span> Registered Accounts ({{ users|length }})
+                </h2>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="text-xs uppercase bg-slate-950/70 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-4">User</th>
+                                <th class="py-3 px-4">Role</th>
+                                <th class="py-3 px-4">Topics</th>
+                                <th class="py-3 px-4">Checklist</th>
+                                <th class="py-3 px-4">Quizzes</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+                            {% for u in users %}
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="py-3.5 px-4 font-mono font-medium text-white flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full {% if u.is_superuser %}bg-cyan-400{% else %}bg-emerald-400{% endif %}"></span>
+                                    {{ u.username }}
+                                    {% if u.username == current_user.username %}
+                                    <span class="text-[10px] text-slate-400 font-sans">(You)</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    {% if u.is_superuser %}
+                                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                                        Superuser
+                                    </span>
+                                    {% else %}
+                                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                                        Student
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-4 font-mono text-xs">
+                                    <span class="text-emerald-400 font-semibold">{{ u.progress.completed_topics|length }}</span>
+                                    <span class="text-slate-500">done</span>
+                                </td>
+                                <td class="py-3.5 px-4 font-mono text-xs">
+                                    <span class="text-cyan-400 font-semibold">
+                                        {{ u.progress.checklist.values()|select|list|length }}
+                                    </span>
+                                    <span class="text-slate-500">items</span>
+                                </td>
+                                <td class="py-3.5 px-4 font-mono text-xs">
+                                    <span class="text-amber-400 font-semibold">
+                                        {{ u.progress.quiz_scores.values()|selectattr('passed')|list|length }}
+                                    </span>
+                                    <span class="text-slate-500">passed</span>
+                                </td>
+                                <td class="py-3.5 px-4 text-right">
+                                    {% if u.username == current_user.username %}
+                                    <span class="text-xs text-slate-500 cursor-not-allowed">Active</span>
+                                    {% else %}
+                                    <form method="POST" action="/admin/delete-user" class="inline" onsubmit="return confirm('Are you sure you want to permanently delete user \'{{ u.username }}\' and all their progress?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="username" value="{{ u.username }}">
+                                        <button 
+                                            type="submit" 
+                                            class="text-xs px-2.5 py-1 rounded-lg border border-rose-900/60 bg-rose-950/40 text-rose-300 hover:bg-rose-900/80 hover:text-white transition-all cursor-pointer"
+                                        >
+                                            Delete
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Create New User Card (1 Column) -->
+        <div class="space-y-4">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
+                <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                    <span>✨</span> Create New User
+                </h2>
+                <p class="text-xs text-slate-400 mb-6">
+                    Provision credentials directly into Firestore without exposing public registration.
+                </p>
+
+                <form method="POST" action="/admin/create-user" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div>
+                        <label for="new_username" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                            Username
+                        </label>
+                        <input 
+                            type="text" 
+                            id="new_username" 
+                            name="username" 
+                            required 
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-mono"
+                            placeholder="e.g. brother"
+                        >
+                    </div>
+
+                    <div>
+                        <label for="new_password" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                            Password
+                        </label>
+                        <input 
+                            type="password" 
+                            id="new_password" 
+                            name="password" 
+                            required 
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm"
+                            placeholder="••••••••••••"
+                        >
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-1">
+                        <input 
+                            type="checkbox" 
+                            id="is_superuser" 
+                            name="is_superuser"
+                            class="w-4 h-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500/50"
+                        >
+                        <label for="is_superuser" class="text-xs font-medium text-slate-300 cursor-pointer select-none">
+                            Grant Superuser privileges (Admin access)
+                        </label>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        class="w-full mt-4 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/20 transition-all transform active:scale-[0.99] cursor-pointer"
+                    >
+                        Create User
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
