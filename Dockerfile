@@ -15,9 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY . .
 
-# Ensure instance directory exists for SQLite
-RUN mkdir -p /app/instance
-
 # Run gunicorn WSGI server listening on PORT
 CMD exec gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 8 --timeout 0 app:app
 

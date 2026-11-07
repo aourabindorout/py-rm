@@ -1,10 +1,11 @@
 import unittest
+import time
 from app import app, limiter
 from db import (
     init_db,
     create_or_update_user,
     delete_user,
-    get_connection,
+    get_firestore_client,
     INACTIVITY_TIMEOUT_SECONDS,
 )
 
@@ -139,13 +140,15 @@ class AuthTestCase(unittest.TestCase):
         res = self.client.get("/")
         self.assertEqual(res.status_code, 200)
 
-        # 3. Simulate 11 minutes (660 seconds) of inactivity by aging last_active_at in DB
-        with get_connection() as conn:
-            conn.execute(
-                "UPDATE sessions SET last_active_at = last_active_at - ?",
-                (INACTIVITY_TIMEOUT_SECONDS + 60,),
-            )
-            conn.commit()
+        # 3. Simulate 11 minutes (660 seconds) of inactivity by aging last_active_at in Firestore
+        fs = get_firestore_client()
+        try:
+            from google.cloud.firestore_v1.base_query import FieldFilter
+            query = fs.collection("sessions").where(filter=FieldFilter("user_id", "==", "tester"))
+        except Exception:
+            query = fs.collection("sessions").where("user_id", "==", "tester")
+        for s in query.stream():
+            s.reference.update({"last_active_at": int(time.time()) - (INACTIVITY_TIMEOUT_SECONDS + 60)})
 
         # 4. Attempt to access / after inactivity
         expired_res = self.client.get("/", follow_redirects=True)

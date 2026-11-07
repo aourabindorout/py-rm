@@ -25,8 +25,7 @@ To protect the platform and ensure a focused environment, there is **zero public
 | :--- | :--- | :--- |
 | **Backend Framework** | **Python 3.12 + Flask** | Written in the very language he is learning, turning the codebase into an educational artifact. Flask is lightweight, explicit, and fast to run. |
 | **Frontend & UI** | **Jinja2 + Tailwind CSS** | Server-side rendered pages guarantee that unauthenticated visitors never receive internal HTML or data payloads. Styled with modern dark-mode components. |
-| **Production Database** | **Google Cloud Firestore** | Serverless NoSQL document database. Zero configuration on Cloud Run, scales to zero with **\$0 idle cost**, and stays within GCP's permanent free tier (1 GB storage, 50k reads/day, 20k writes/day). |
-| **Local / Fallback DB** | **SQLite 3** | Zero-dependency local relational engine. Enables instantaneous offline unit testing (14 tests in <4s) and serves as an automatic fail-safe if cloud networks are unreachable. |
+| **Database Engine** | **Google Cloud Firestore (Native Mode)** | Serverless NoSQL document database. Zero configuration on Cloud Run, scales to zero with **\$0 idle cost**, and stays within GCP's permanent free tier (1 GB storage, 50k reads/day, 20k writes/day). Full persistent state with zero SQLite dependencies. |
 | **Content Store** | **YAML / JSON** | Curriculum topics, video links, checklist items, and quiz questions live as structured repository files for easy version control without database migrations. |
 | **Hosting & Compute** | **Google Cloud Run** | Fully managed serverless container runtime deployed in `asia-south1 (Mumbai)`. Configured with `max-instances=1` to guarantee cost control. |
 | **WSGI Server** | **Gunicorn** | Production-grade WSGI server running with 1 worker and 8 threads for low memory usage and high concurrency. |
@@ -50,7 +49,7 @@ flowchart TD
     AuthFilter -- No --> SessionCheck{Has Session Token?}
     SessionCheck -- No --> RedirectLogin[302 Redirect to /login]
     
-    SessionCheck -- Yes --> ValidateSession{Validate in DB\nFirestore / SQLite}
+    SessionCheck -- Yes --> ValidateSession{Validate in DB\nGoogle Cloud Firestore}
     ValidateSession -- Expired > 10m --> DropSession[Delete Session & Redirect to /login]
     ValidateSession -- Fingerprint Mismatch --> DropSession
     ValidateSession -- Valid --> RefreshTime[Update last_active_at]
@@ -112,32 +111,46 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
 
 ---
 
-### Phase 5: Google Cloud Firestore Integration & Dual-Backend Fallback
+### Phase 5: Google Cloud Firestore Integration
 1. **IAM Permissions**: Attached the `Cloud Datastore User` role to the Cloud Run Compute Service Account (`<project-number>-compute@developer.gserviceaccount.com`).
 2. **Firestore Provisioning**: Created the `(default)` database in **Firestore Native Mode**, Standard Edition, located in `asia-south1 (Mumbai)`.
 3. **Data Model Architecture**:
    - `users/{username}`: Direct document key lookup for $O(1)$ authentication checks.
    - `sessions/{session_token}`: Direct document key lookup for active session validation.
    - `progress/{username}`: Persistent storage for `completed_topics`, `checklist`, and `quiz_scores`.
-4. **Self-Healing Dual-Backend Engine (`db.py`)**:
-   - **Production (Cloud Run)**: Detects `K_SERVICE` or `GOOGLE_CLOUD_PROJECT` and operates directly against Google Cloud Firestore.
-   - **Local / Testing**: Operates against local SQLite (`instance/py_rm.sqlite3`).
-   - **Fault-Tolerant Exception Handling**: All Firestore operations are wrapped in safe fallbacks. If Firestore experiences network timeouts or configuration delays, the app falls back to local SQLite without crashing Gunicorn (permanently resolving the startup 503 "Service Unavailable" issue).
 
 ---
 
 ### Phase 6: Advanced Hardening & Vulnerability Remediation
 1. **Cryptographic `SECRET_KEY` Generation**:
-   - Removed the static fallback string `"py-rm-dev-secret-key-change-in-prod"`.
-   - If `SECRET_KEY` is not provided in environment variables, the server dynamically generates an ephemeral 256-bit cryptographic key on startup (`secrets.token_hex(32)`), guaranteeing that session signatures can never be forged.
+   - Dynamic 256-bit cryptographic key fallback on startup (`secrets.token_hex(32)`), guaranteeing that session signatures can never be forged.
 2. **Strict User-Agent Verification**:
-   - Closed a vulnerability where requests omitting the `User-Agent` header bypassed fingerprint validation.
-   - Requests without a `User-Agent` or with an empty string evaluate against `stored_ua_hash`, triggering immediate session revocation.
+   - Requests omitting or falsifying the `User-Agent` trigger immediate session revocation.
 3. **CSRF Protection on Logout**:
-   - Added synchronizer CSRF tokens (`session["csrf_token"] = secrets.token_hex(32)`).
-   - Injected CSRF tokens into the logout form in `templates/home.html`.
-   - `POST /logout` verifies tokens using `secrets.compare_digest`, neutralizing cross-origin logout DoS attacks from external websites.
-4. **Emoji Favicon**: Injected an inline SVG data-URI favicon (`🐍`) into `templates/base.html`, replacing the browser's default globe icon with zero external asset dependencies.
+   - Added synchronizer CSRF tokens (`session["csrf_token"] = secrets.token_hex(32)`) and `secrets.compare_digest` verification.
+4. **Emoji Favicon**: Inline SVG data-URI favicon (`🐍`) with zero external asset dependencies.
+
+---
+
+### Phase 7: Pure Firestore Migration & Web Superuser Dashboard (`/admin`)
+1. **100% SQLite Elimination**:
+   - Completely purged `import sqlite3`, `instance/py_rm.sqlite3`, and SQLite fallback branches from `db.py` and `manage.py`.
+   - Removed ephemeral filesystem directory creation (`RUN mkdir -p /app/instance`) from `Dockerfile`.
+   - All environments (Cloud Run and local dev) communicate directly with Google Cloud Firestore, permanently eliminating container cold-start data loss and split-brain states.
+2. **Role-Based Access Control (`is_superuser`)**:
+   - User and session schemas store `is_superuser: bool`.
+   - Replaced legacy `ADMIN_*` environment variables with `SUPERUSER_USERNAME` and `SUPERUSER_PASSWORD` for deterministic superuser auto-seeding.
+3. **Web-Based Admin Dashboard (`templates/admin.html`)**:
+   - Accessible only to superusers via `@require_superuser` (unauthorized visitors receive `403 Forbidden`).
+   - Renders live user roster, role badges, creation timestamps, and student progress metrics (completed topics, checklist items, quizzes passed).
+   - In-app **Create User** form with automatic password hashing.
+   - In-app **Delete User** action with anti-CSRF protection, automatic session invalidation, and self-deletion prevention guards.
+4. **Cascading User Deletion (`delete_user`)**:
+   - Deleting a user purges their Firestore user doc, revokes all active session documents immediately, and cleans up progress data.
+5. **Local Authentication Bridge**:
+   - Automatically auto-detects `gcp-key.json` locally while strictly ignoring it in `.gitignore` to prevent credential exposure.
+6. **Isolated Test Harness**:
+   - Refactored `test_auth.py` to create and tear down scoped test accounts (`tester`, `admin_tester`, `created_student`), enabling automated testing against Firestore without touching real student or superuser accounts.
 
 ---
 
@@ -147,9 +160,10 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
 ```
 firestore/
 ├── users/
-│   └── {username}                 # e.g. "brother"
+│   └── {username}                 # e.g. "brother", "arout"
 │       ├── username: "brother"
 │       ├── password_hash: "scrypt:32768:8:1$..."
+│       ├── is_superuser: false
 │       └── created_at: 1730000000
 │
 ├── sessions/
@@ -158,6 +172,7 @@ firestore/
 │       ├── user_id: "brother"
 │       ├── user_agent_hash: "e3b0c442..."
 │       ├── ip_address: "203.0.113.1"
+│       ├── is_superuser: false
 │       ├── created_at: 1730000000
 │       └── last_active_at: 1730000600
 │
@@ -169,32 +184,7 @@ firestore/
         └── updated_at: 1730001000
 ```
 
-### SQLite Schema (Local Development & Fallback)
-```sql
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL COLLATE NOCASE,
-    password_hash TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
-CREATE TABLE IF NOT EXISTS sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_token TEXT UNIQUE NOT NULL,
-    user_id TEXT NOT NULL,
-    user_agent_hash TEXT,
-    ip_address TEXT,
-    created_at INTEGER NOT NULL,
-    last_active_at INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS progress (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL COLLATE NOCASE,
-    data_json TEXT NOT NULL DEFAULT '{}',
-    updated_at INTEGER NOT NULL
-);
-```
 
 ---
 
@@ -212,6 +202,9 @@ CREATE TABLE IF NOT EXISTS progress (
 | **Unattended Device Session Abandonment** | 10-minute sliding inactivity timeout auto-purges token | `db.py:INACTIVITY_TIMEOUT_SECONDS` |
 | **Cross-Site Request Forgery (Logout DoS)** | Synchronizer CSRF token validation with `compare_digest` | `app.py:logout` & `templates/home.html` |
 | **Unauthorized Endpoint Access** | `@app.before_request` barrier; all non-whitelisted routes 302 to `/login` | `app.py:enforce_authentication` |
+| **Privilege Escalation** | `@require_superuser` decorator restricts `/admin` endpoints (403 for students) | `app.py:admin_*` |
+| **Accidental Self-Lockout** | Active superuser is blocked from deleting their own account | `app.py:admin_delete_user` |
+| **Orphaned Sessions on Deletion** | Cascading cleanup revokes active tokens and deletes progress on user deletion | `db.py:delete_user` |
 | **Secret Key Forgery** | High-entropy 256-bit dynamic generation fallback | `app.py:app.secret_key` |
 
 ---
@@ -236,11 +229,14 @@ The project includes an automated test suite covering all security constraints a
 | `test_rate_limit_per_ip_post` | 4th POST request to `/login` from same IP within 1m returns 429 | ✅ Passed |
 | `test_rate_limit_global_post` | 16th POST attempt across distinct IPs within 1m returns 429 | ✅ Passed |
 | `test_progress_tracking` | Checklist milestones, topics, and quiz score mutations persist | ✅ Passed |
+| `test_student_blocked_from_admin` | Regular student accessing `/admin` is rejected (403) | ✅ Passed |
+| `test_superuser_can_access_admin_and_manage_users` | Superuser accesses `/admin`, creates and deletes users in Firestore | ✅ Passed |
+| `test_superuser_cannot_delete_self` | Superuser attempting to delete self is rejected | ✅ Passed |
 
 **Execution**:
 ```bash
 .venv/bin/python test_auth.py
-# Ran 14 tests in 3.7s -> OK
+# Ran 17 tests in 13.3s against Cloud Firestore -> OK
 ```
 
 ---
