@@ -13,4 +13,6 @@ instance/
 test_*.py
 .vscode/
 .idea/
+gcp-key.json
+*.json
 
