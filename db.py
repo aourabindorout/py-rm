@@ -11,6 +11,10 @@ logger = logging.getLogger(__name__)
 # Session inactivity timeout (10 minutes)
 INACTIVITY_TIMEOUT_SECONDS = int(os.environ.get("SESSION_INACTIVITY_TIMEOUT_SECONDS", 600))
 
+# Throttling interval for session last_active_at updates (60 seconds)
+# Prevents redundant Firestore writes on every single HTTP request
+ACTIVITY_UPDATE_INTERVAL_SECONDS = int(os.environ.get("SESSION_ACTIVITY_UPDATE_INTERVAL_SECONDS", 60))
+
 # Global Firestore client cache
 _firestore_client = None
 _firestore_initialized = False
@@ -224,8 +228,10 @@ def validate_and_refresh_session(
             doc_ref.delete()
             return None
 
-    # 3. Refresh activity timestamp
-    doc_ref.update({"last_active_at": now})
+    # 3. Refresh activity timestamp (throttled to avoid redundant Firestore writes on every request)
+    if (now - last_active) >= ACTIVITY_UPDATE_INTERVAL_SECONDS:
+        doc_ref.update({"last_active_at": now})
+
     return {
         "user_id": data["user_id"],
         "username": data["user_id"],

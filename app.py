@@ -32,15 +32,27 @@ from db import (
 app = Flask(__name__)
 
 # Secret key for signing session cookies
-# Requires SECRET_KEY in production, or generates an ephemeral 256-bit cryptographic key
-app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+# Requires SECRET_KEY in production to preserve cookies across Cloud Run cold starts
+secret_key_env = os.environ.get("SECRET_KEY")
+if not secret_key_env:
+    app.logger.warning(
+        "WARNING: SECRET_KEY environment variable is not set! Using an ephemeral key. "
+        "Sessions will be invalidated whenever Cloud Run scales to zero. "
+        "Set SECRET_KEY in Cloud Run console to maintain persistent sessions."
+    )
+    app.secret_key = secrets.token_hex(32)
+else:
+    app.secret_key = secret_key_env
 
 # Session cookie security settings
+# Automatically enables Secure cookies in Cloud Run (K_SERVICE) or production, while keeping local dev functional
+is_cloud_or_prod = bool(os.environ.get("K_SERVICE")) or os.environ.get("FLASK_ENV") == "production"
+force_secure = os.environ.get("SECURE_COOKIES", "true" if is_cloud_or_prod else "false").lower() == "true"
+
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=os.environ.get("FLASK_ENV") == "production"
-    or os.environ.get("SECURE_COOKIES", "false").lower() == "true",
+    SESSION_COOKIE_SECURE=force_secure and not app.testing,
 )
 
 # Apply ProxyFix for Cloud Run / reverse proxies so real client IPs & HTTPS scheme are resolved

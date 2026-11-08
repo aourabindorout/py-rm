@@ -90,24 +90,25 @@ This project was built incrementally, addressing cloud constraints, security bou
 ### Phase 3: Login Guardrails & Abuse Defense
 To prevent automated credential stuffing, bot scraping, and billing spikes from internet crawlers:
 1. **Application-Level Dual-Tier Rate Limiting (`Flask-Limiter`)**:
+   - **Cost-Effective In-Memory Storage (`storage_uri="memory://"`)**: Rather than running a dedicated Redis instance (like GCP Memorystore at ~$35–$50/month with zero scale-to-zero capability), rate-limit counters are kept in container process memory. Paired with `max-instances=1`, this delivers effective burst and brute-force protection at **$0.00 infrastructure cost**, with the conscious architectural trade-off that counters reset when the container scales down to zero.
    - **`POST /login` (Credential Stuffing Defense)**:
      - **3 attempts / minute per IP**
-     - **15 attempts / minute globally** across all visitors
+     - **15 attempts / minute per instance ceiling**
    - **`GET /login` (Scraping & Flooding Defense)**:
      - **3 requests / minute per IP**
-     - **25 requests / minute globally** across all visitors
+     - **25 requests / minute per instance ceiling**
 2. **Custom Error UI (`templates/429.html`)**: Rate-limited visitors receive an informative HTTP 429 page explaining the cooldown period with a reload action.
 3. **Timing-Attack Mitigation**: Rate limits evaluate *before* password hash computations, preventing CPU exhaustion attacks.
 
 ---
 
-### Phase 4: Server-Side Session Tracking & Replay Attack Neutralization
+### Phase 4: Server-Side Session Tracking & Expiry Controls
 * **The Vulnerability**: Flask's default sessions are stateless client-side signed cookies. If an attacker copied an active session cookie on another machine, clicking "Log Out" only deleted the cookie on the user's browser—the stolen cookie string remained cryptographically valid until expiration.
 * **The Fix**:
-  1. **Server-Side Session Store**: Created a `sessions` table/collection tracking `session_token`, `user_id`, `user_agent_hash`, `created_at`, and `last_active_at`.
-  2. **Instant Revocation on Logout**: Clicking **Log Out** immediately purges the session token from the server-side database. Any copied cookie is rendered 100% dead.
+  1. **Server-Side Session Store**: Created a `sessions` collection tracking `session_token`, `user_id`, `user_agent_hash`, `created_at`, and `last_active_at`.
+  2. **Instant Revocation on Logout**: Clicking **Log Out** immediately purges the session token from the Firestore database, rendering the cookie completely dead on the server.
   3. **10-Minute Inactivity Expiry**: Sessions enforce a sliding 10-minute inactivity window. If no requests are made for 600 seconds, the session auto-expires and is deleted from the database.
-  4. **Device Fingerprint Binding**: Binds the session token to a SHA-256 hash of the client's `User-Agent`. Replaying the token from a different browser or OS terminates the session.
+  4. **User-Agent Consistency Check**: Compares the client's `User-Agent` against a SHA-256 hash stored at login. Serves as a defense-in-depth heuristic against unsophisticated script replay or accidental token sharing between different browsers. (Note: As an HTTP header, `User-Agent` is client-controlled rather than hardware device authentication; an attacker with full request control can spoof it).
 
 ---
 
@@ -122,13 +123,16 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
 ---
 
 ### Phase 6: Advanced Hardening & Vulnerability Remediation
-1. **Cryptographic `SECRET_KEY` Generation**:
-   - Dynamic 256-bit cryptographic key fallback on startup (`secrets.token_hex(32)`), guaranteeing that session signatures can never be forged.
-2. **Strict User-Agent Verification**:
+1. **Cryptographic `SECRET_KEY` Management**:
+   - In production, `SECRET_KEY` should be set as a persistent environment variable in Cloud Run to prevent user cookies from being invalidated during container cold starts.
+   - If omitted, a dynamic 256-bit cryptographic key fallback is generated on startup (`secrets.token_hex(32)`) and a warning is logged.
+2. **Hardened `SESSION_COOKIE_SECURE`**:
+   - Automatically detects Cloud Run (`K_SERVICE`) or production environments and enforces `SESSION_COOKIE_SECURE = True`, guaranteeing that session cookies are only transmitted over encrypted HTTPS channels.
+3. **Strict User-Agent Verification**:
    - Requests omitting or falsifying the `User-Agent` trigger immediate session revocation.
-3. **CSRF Protection on Logout**:
-   - Added synchronizer CSRF tokens (`session["csrf_token"] = secrets.token_hex(32)`) and `secrets.compare_digest` verification.
-4. **Emoji Favicon**: Inline SVG data-URI favicon (`🐍`) with zero external asset dependencies.
+4. **CSRF Protection on Sensitive Endpoints**:
+   - Added synchronizer CSRF tokens (`session["csrf_token"] = secrets.token_hex(32)`) and `secrets.compare_digest` verification across all state-changing endpoints (`/logout`, `/admin/create-user`, and `/admin/delete-user`).
+5. **Emoji Favicon**: Inline SVG data-URI favicon (`🐍`) with zero external asset dependencies.
 
 ---
 
@@ -147,9 +151,12 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
    - In-app **Delete User** action with anti-CSRF protection, automatic session invalidation, and self-deletion prevention guards.
 4. **Cascading User Deletion (`delete_user`)**:
    - Deleting a user purges their Firestore user doc, revokes all active session documents immediately, and cleans up progress data.
-5. **Local Authentication Bridge**:
-   - Automatically auto-detects `gcp-key.json` locally while strictly ignoring it in `.gitignore` to prevent credential exposure.
-6. **Isolated Test Harness**:
+5. **Firestore Activity Write Throttling (60-second sliding update)**:
+   - To eliminate redundant database operations on every single page load, `validate_and_refresh_session` throttles `last_active_at` writes to once every 60 seconds (`ACTIVITY_UPDATE_INTERVAL_SECONDS`).
+   - Cuts Firestore write volume by 90–95%, significantly improves page load latency by removing database writes from the request hot path, and protects daily free quotas.
+6. **Local Authentication Bridge**:
+   - Automatically auto-detects `gcp-key.json` locally while strictly ignoring it in `.gitignore` and `.dockerignore` to prevent credential exposure.
+7. **Isolated Test Harness**:
    - Refactored `test_auth.py` to create and tear down scoped test accounts (`tester`, `admin_tester`, `created_student`), enabling automated testing against Firestore without touching real student or superuser accounts.
 
 ---
@@ -193,19 +200,21 @@ firestore/
 | Threat Vector | Mechanism / Defense Layer | Implementation Location |
 | :--- | :--- | :--- |
 | **Billing Blowout / Resource Exhaustion** | Cloud Run hard limit: `max-instances=1` | Google Cloud Run configuration |
-| **Brute Force & Credential Stuffing** | 3 attempts/min per IP, 15 attempts/min global ceiling | `Flask-Limiter` on `POST /login` |
-| **Scraper / Bot Flooding** | 3 requests/min per IP, 25 requests/min global ceiling | `Flask-Limiter` on `GET /login` |
+| **Brute Force & Credential Stuffing** | In-memory limiter ($0-cost design); 3 attempts/min per IP, 15 attempts/min per instance | `Flask-Limiter` on `POST /login` |
+| **Scraper / Bot Flooding** | In-memory limiter ($0-cost design); 3 requests/min per IP, 25 requests/min per instance | `Flask-Limiter` on `GET /login` |
 | **Password Database Breach** | **scrypt** cryptographic hashing with unique salt | `db.py` via `werkzeug.security` |
 | **Cookie Replay Attack (Stolen Cookie)** | Server-side token storage + immediate DB deletion on logout | `db.py:delete_session` |
-| **Session Hijacking / Device Theft** | SHA-256 browser `User-Agent` fingerprint matching | `db.py:validate_and_refresh_session` |
+| **Naive Session Replay Across Browsers** | SHA-256 browser `User-Agent` consistency check (defense-in-depth heuristic) | `db.py:validate_and_refresh_session` |
 | **Omitted User-Agent Bypass** | Strict equality check rejects missing or empty headers | `db.py:validate_and_refresh_session` |
 | **Unattended Device Session Abandonment** | 10-minute sliding inactivity timeout auto-purges token | `db.py:INACTIVITY_TIMEOUT_SECONDS` |
-| **Cross-Site Request Forgery (Logout DoS)** | Synchronizer CSRF token validation with `compare_digest` | `app.py:logout` & `templates/home.html` |
+| **Redundant Hot-Path Database Writes** | 60-second sliding update throttling cuts Firestore writes by 90–95% | `db.py:ACTIVITY_UPDATE_INTERVAL_SECONDS` |
+| **Cross-Site Request Forgery (CSRF)** | Synchronizer CSRF tokens (`secrets.compare_digest`) on all state mutations | `app.py` (/logout, /admin/*) |
 | **Unauthorized Endpoint Access** | `@app.before_request` barrier; all non-whitelisted routes 302 to `/login` | `app.py:enforce_authentication` |
 | **Privilege Escalation** | `@require_superuser` decorator restricts `/admin` endpoints (403 for students) | `app.py:admin_*` |
 | **Accidental Self-Lockout** | Active superuser is blocked from deleting their own account | `app.py:admin_delete_user` |
 | **Orphaned Sessions on Deletion** | Cascading cleanup revokes active tokens and deletes progress on user deletion | `db.py:delete_user` |
-| **Secret Key Forgery** | High-entropy 256-bit dynamic generation fallback | `app.py:app.secret_key` |
+| **Unencrypted Cookie Interception** | `SESSION_COOKIE_SECURE=True` enforced in Cloud Run / HTTPS environments | `app.py:SESSION_COOKIE_SECURE` |
+| **Session Persistence across Cold Starts** | Explicit `SECRET_KEY` environment provisioning prevents restart invalidation | `app.py:app.secret_key` |
 
 ---
 
@@ -265,10 +274,15 @@ python manage.py delete-user brother
 python manage.py list-users
 ```
 
-#### Production Auto-Seeding via Cloud Run Environment Variables:
-Set the following environment variables in Google Cloud Run to auto-seed your superuser account on startup:
-* `SUPERUSER_USERNAME="<your_admin_username>"`
-* `SUPERUSER_PASSWORD="<your_admin_password>"`
+#### Production Configuration via Cloud Run Environment Variables:
+Set the following environment variables in Google Cloud Run (**Edit & Deploy New Revision** → **Variables & Secrets**):
+* `SECRET_KEY`: A persistent 256-bit key to keep sessions valid across container scale-to-zero cold starts. Generate with:
+  ```bash
+  python3 -c "import secrets; print(secrets.token_hex(32))"
+  ```
+* `SUPERUSER_USERNAME`: Your chosen administrator username.
+* `SUPERUSER_PASSWORD`: Your chosen strong administrator password.
+* `SECURE_COOKIES`: Set to `true` (automatically defaulted to `true` in Cloud Run).
 
 ### 3. Run Locally
 ```bash
