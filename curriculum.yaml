@@ -1,0 +1,638 @@
+title: "Python Roadmap for Beginners"
+subtitle: "A step-by-step path from zero experience to writing your own Python programs and games."
+pass_threshold_percent: 75
+
+topics:
+  - id: "setup-hello"
+    order: 1
+    icon: "🚀"
+    title: "Setup & Your First Python Program"
+    duration: "15 min"
+    summary: "Learn what Python is, set up your coding workspace, and write your very first line of code using print()."
+    video:
+      id: "YYXdXT2l-Gg"
+      title: "Python Tutorial for Beginners 1: Install and Setup for Mac and Windows"
+      author: "Corey Schafer"
+      bonus_id: "kqtD5dpn9C8"
+      bonus_title: "Bonus: Python for Beginners in 1 Hour (Programming with Mosh)"
+    concepts:
+      - heading: "What is Python?"
+        body: "Python is one of the world's most popular programming languages. Big companies, game developers, and AI engineers use it because its code reads almost like plain English."
+      - heading: "Your First Command: print()"
+        body: "The print() function tells the computer to display a message on the screen. Anything inside quotes (single or double) is treated as text."
+    code_example:
+      title: "hello.py"
+      code: |
+        # Lines starting with # are comments for humans (Python ignores them)
+        print("Hello, World!")
+        print("I am learning Python!")
+        print("2 + 2 =", 2 + 2)
+    challenge: "Write a short Python script that prints 3 lines: your name, your favorite video game or sport, and one cool goal you want to build with Python."
+    checklist:
+      - id: "setup_watch_video"
+        label: "Watch the setup video (or open a Python editor/playground)"
+      - id: "setup_install_verify"
+        label: "Verify Python runs by typing python --version or running a test file"
+      - id: "setup_first_print"
+        label: "Run print('Hello, World!') successfully without errors"
+      - id: "setup_complete_challenge"
+        label: "Complete the 3-line print() mini-challenge"
+    quiz:
+      id: "quiz-setup-hello"
+      title: "Module 1 Checkpoint: Getting Started"
+      questions:
+        - id: "q1"
+          prompt: "Which Python function displays text on the screen?"
+          options:
+            - "display()"
+            - "print()"
+            - "show()"
+            - "write()"
+          answer_index: 1
+          explanation: "print() is Python's built-in function to output text and values to the screen."
+        - id: "q2"
+          prompt: "What symbol starts a single-line comment in Python?"
+          options:
+            - "//"
+            - "/*"
+            - "#"
+            - "--"
+          answer_index: 2
+          explanation: "Python uses the # symbol for comments. Everything after # on that line is ignored when the code runs."
+        - id: "q3"
+          prompt: "Which of these will run WITHOUT a SyntaxError?"
+          options:
+            - "print(Hello!)"
+            - "print(\"Hello!\")"
+            - "Print(\"Hello!\")"
+            - "print \"Hello!\""
+          answer_index: 1
+          explanation: "Text needs quotes around it, Python is case-sensitive (print must be lowercase), and parentheses () are required."
+        - id: "q4"
+          prompt: "What happens if you write: print(\"5 + 3\")?"
+          options:
+            - "It prints 8"
+            - "It crashes with an error"
+            - "It prints 5 + 3 exactly as text"
+            - "It prints nothing"
+          answer_index: 2
+          explanation: "Because \"5 + 3\" is wrapped in quotes, Python treats it as literal text instead of doing math."
+
+  - id: "strings-variables"
+    order: 2
+    icon: "🏷️"
+    title: "Variables & Strings (Working with Text)"
+    duration: "25 min"
+    summary: "Store data in labeled boxes called variables, manipulate text with string methods, and build dynamic messages with f-strings."
+    video:
+      id: "k9TUPpGqYTo"
+      title: "Python Tutorial for Beginners 2: Strings - Working with Textual Data"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "Variables are Labeled Boxes"
+        body: "A variable lets you save a value with a name so you can reuse it later. Use = to store a value inside a variable."
+      - heading: "Strings & f-Strings"
+        body: "Text in Python is called a string (str). Putting an f right before the quotes lets you plug variables straight inside {curly braces}!"
+    code_example:
+      title: "strings_demo.py"
+      code: |
+        hero_name = "Alex"
+        power_level = 9000
+
+        # f-strings make combining text and variables super easy
+        print(f"Player {hero_name} has power level {power_level}!")
+
+        # Built-in string methods
+        shout = hero_name.upper()
+        print(shout)           # ALEX
+        print(len(hero_name))  # 4 characters
+    challenge: "Create variables for your favorite character's name, superpower, and age, then print a cool intro sentence using an f-string."
+    checklist:
+      - id: "str_watch_video"
+        label: "Watch the Strings & Textual Data video"
+      - id: "str_variables"
+        label: "Create 3 string variables and print them"
+      - id: "str_methods"
+        label: "Try .upper(), .lower(), and len() on a string"
+      - id: "str_fstring"
+        label: "Print a custom sentence using an f-string f\"...\""
+    quiz:
+      id: "quiz-strings-variables"
+      title: "Module 2 Checkpoint: Variables & Strings"
+      questions:
+        - id: "q1"
+          prompt: "Which variable name is VALID in Python?"
+          options:
+            - "1st_player"
+            - "player name"
+            - "player_name"
+            - "player-name"
+          answer_index: 2
+          explanation: "Variable names cannot start with a number, cannot contain spaces, and cannot use hyphens (-). Underscores (_) are great!"
+        - id: "q2"
+          prompt: "What does len(\"Python\") return?"
+          options:
+            - "5"
+            - "6"
+            - "7"
+            - "\"Python\""
+          answer_index: 1
+          explanation: "len() counts the number of characters in a string. P-y-t-h-o-n has 6 characters."
+        - id: "q3"
+          prompt: "What will this print?\nname = \"Sam\"\nprint(f\"Hi {name}!\")"
+          options:
+            - "Hi {name}!"
+            - "Hi Sam!"
+            - "fHi Sam!"
+            - "Error"
+          answer_index: 1
+          explanation: "An f-string replaces {name} with the value stored inside the variable name."
+        - id: "q4"
+          prompt: "What does \"hello\".upper() produce?"
+          options:
+            - "\"Hello\""
+            - "\"HELLO\""
+            - "\"hello\""
+            - "5"
+          answer_index: 1
+          explanation: "The .upper() string method converts every letter in the string to uppercase."
+
+  - id: "numbers-math"
+    order: 3
+    icon: "🔢"
+    title: "Numbers, Math & User Input"
+    duration: "25 min"
+    summary: "Work with integers and decimals (floats), use Python as a super-calculator, and ask users questions with input()."
+    video:
+      id: "khKv-8q7YmY"
+      title: "Python Tutorial for Beginners 3: Integers and Floats - Working with Numeric Data"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "Integers vs. Floats"
+        body: "Whole numbers like 42 or -7 are integers (int). Numbers with a decimal point like 3.14 or 9.5 are floats (float)."
+      - heading: "Asking for Input & Converting Types"
+        body: "input() always gives you text (a string). To do math with what someone typed, convert it using int() or float()."
+    code_example:
+      title: "math_and_input.py"
+      code: |
+        score = 10
+        score += 5          # Shortcut for score = score + 5 (now 15)
+        print(2 ** 3)       # Exponents: 2 to the power of 3 = 8
+        print(10 % 3)       # Modulo (remainder): 10 divided by 3 leaves 1
+
+        # Converting user input into a number
+        age_text = input("How old are you? ")
+        age = int(age_text)
+        print(f"In 5 years, you will be {age + 5}!")
+    challenge: "Build a quick Dog-Years Calculator: ask the user for their age with input(), convert it to an int, and print their age multiplied by 7."
+    checklist:
+      - id: "num_watch_video"
+        label: "Watch the Integers and Floats video"
+      - id: "num_operators"
+        label: "Test +, -, *, /, ** (power), and % (remainder) in Python"
+      - id: "num_casting"
+        label: "Use int() to add two numbers entered as strings"
+      - id: "num_dog_years"
+        label: "Build and run the Dog-Years Calculator challenge"
+    quiz:
+      id: "quiz-numbers-math"
+      title: "Module 3 Checkpoint: Numbers & Math"
+      questions:
+        - id: "q1"
+          prompt: "What is the result of 2 ** 4 in Python?"
+          options:
+            - "6"
+            - "8"
+            - "16"
+            - "24"
+          answer_index: 2
+          explanation: "** is the exponent (power) operator, so 2 ** 4 means 2 * 2 * 2 * 2 = 16."
+        - id: "q2"
+          prompt: "What does the % (modulo) operator calculate in 17 % 5?"
+          options:
+            - "3.4"
+            - "2 (the remainder)"
+            - "17 percent of 5"
+            - "85"
+          answer_index: 1
+          explanation: "5 goes into 17 three times (15), leaving a remainder of 2."
+        - id: "q3"
+          prompt: "What data type does input(\"Enter a number: \") ALWAYS return?"
+          options:
+            - "int (integer)"
+            - "float (decimal)"
+            - "str (string)"
+            - "bool (True/False)"
+          answer_index: 2
+          explanation: "input() always returns a string (text), even if the user types digits like 42."
+        - id: "q4"
+          prompt: "What does int(\"10\") + int(\"5\") evaluate to?"
+          options:
+            - "\"105\""
+            - "15"
+            - "\"15\""
+            - "TypeError"
+          answer_index: 1
+          explanation: "int() converts the strings \"10\" and \"5\" into whole numbers, so adding them produces 15."
+
+  - id: "lists-tuples"
+    order: 4
+    icon: "🎒"
+    title: "Lists, Tuples & Sets (Your Inventory)"
+    duration: "30 min"
+    summary: "Keep multiple items together in a single list—like a backpack inventory in a video game—and learn indexing, slicing, and sorting."
+    video:
+      id: "W8KRzm-HUcc"
+      title: "Python Tutorial for Beginners 4: Lists, Tuples, and Sets"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "Lists Start at Index 0"
+        body: "Lists hold ordered items inside square brackets [ ]. Remember: programmers count from 0, so the first item is always at index [0]!"
+      - heading: "Changing a List vs. Tuples"
+        body: "You can add, remove, and sort items in a list with .append(), .remove(), and .sort(). Tuples use parentheses ( ) and cannot be changed after creation."
+    code_example:
+      title: "inventory.py"
+      code: |
+        backpack = ["flashlight", "compass", "water"]
+        print(backpack[0])          # flashlight (first item)
+        print(backpack[-1])         # water (last item!)
+
+        backpack.append("map")      # Add an item to the end
+        backpack.remove("compass")  # Remove an item
+        print("Items:", len(backpack))
+        print(backpack)
+    challenge: "Create a list of 4 favorite movies or games. Print the first and last one, add a 5th one with .append(), and sort them alphabetically!"
+    checklist:
+      - id: "list_watch_video"
+        label: "Watch the Lists, Tuples, and Sets video"
+      - id: "list_indexing"
+        label: "Access items using [0] (first) and [-1] (last)"
+      - id: "list_mutate"
+        label: "Use .append() and .remove() to modify a list"
+      - id: "list_challenge"
+        label: "Complete the favorite movies/games sorted list challenge"
+    quiz:
+      id: "quiz-lists-tuples"
+      title: "Module 4 Checkpoint: Lists & Tuples"
+      questions:
+        - id: "q1"
+          prompt: "Given games = [\"Minecraft\", \"Chess\", \"Terraria\"], what is games[1]?"
+          options:
+            - "\"Minecraft\""
+            - "\"Chess\""
+            - "\"Terraria\""
+            - "IndexError"
+          answer_index: 1
+          explanation: "Python indexing starts at 0. Index 0 is \"Minecraft\", and index 1 is \"Chess\"."
+        - id: "q2"
+          prompt: "Which method adds a new item to the end of a list?"
+          options:
+            - ".push()"
+            - ".add_end()"
+            - ".append()"
+            - ".insert_last()"
+          answer_index: 2
+          explanation: "list.append(item) adds a single item to the end of a Python list."
+        - id: "q3"
+          prompt: "What does negative index [-1] give you on a list?"
+          options:
+            - "An error"
+            - "The first item"
+            - "The last item"
+            - "An empty list"
+          answer_index: 2
+          explanation: "Negative indices count backward from the end of the list, so [-1] is always the last element."
+        - id: "q4"
+          prompt: "How is a tuple different from a list?"
+          options:
+            - "Tuples can only hold numbers"
+            - "Tuples are immutable (cannot be modified after creation)"
+            - "Tuples use curly braces {}"
+            - "Tuples are faster to delete items from"
+          answer_index: 1
+          explanation: "Tuples use parentheses () and are immutable, meaning you cannot append, remove, or change their elements."
+
+  - id: "dictionaries"
+    order: 5
+    icon: "🗂️"
+    title: "Dictionaries (Key-Value Superpowers)"
+    duration: "25 min"
+    summary: "Store structured data using named keys instead of numbers—perfect for game characters, profiles, and real-world apps."
+    video:
+      id: "daefusOOGUA"
+      title: "Python Tutorial for Beginners 5: Dictionaries - Working with Key-Value Pairs"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "Keys & Values"
+        body: "Think of a real dictionary: you look up a word (the key) to get its definition (the value). In Python, dictionaries use curly braces {key: value}."
+      - heading: "Safe Lookups with .get()"
+        body: "Using player['gold'] crashes if 'gold' doesn't exist yet. Using player.get('gold', 0) safely returns 0 instead of crashing!"
+    code_example:
+      title: "character_sheet.py"
+      code: |
+        hero = {
+            "name": "Nova",
+            "level": 5,
+            "skills": ["coding", "stealth"]
+        }
+
+        print(hero["name"])                 # Nova
+        print(hero.get("coins", 0))         # 0 (doesn't crash!)
+
+        hero["level"] = 6                   # Update an existing key
+        hero["coins"] = 50                  # Add a brand new key
+        print(hero)
+    challenge: "Create a dictionary for a Pokémon, sports player, or custom RPG character with name, hp, level, and a list of 2 moves. Level them up by 1 and print the updated stats."
+    checklist:
+      - id: "dict_watch_video"
+        label: "Watch the Dictionaries video"
+      - id: "dict_create"
+        label: "Create a dictionary with at least 3 key-value pairs"
+      - id: "dict_get"
+        label: "Practice using .get() with a default fallback value"
+      - id: "dict_challenge"
+        label: "Build and level up your character dictionary"
+    quiz:
+      id: "quiz-dictionaries"
+      title: "Module 5 Checkpoint: Dictionaries"
+      questions:
+        - id: "q1"
+          prompt: "Which symbols are used to create a Python dictionary?"
+          options:
+            - "[ ]"
+            - "( )"
+            - "{ }"
+            - "< >"
+          answer_index: 2
+          explanation: "Dictionaries use curly braces with key: value pairs, like {\"score\": 100}."
+        - id: "q2"
+          prompt: "Given stats = {\"hp\": 100}, what happens if you run stats.get(\"mana\", 20)?"
+          options:
+            - "KeyError crash"
+            - "Returns None"
+            - "Returns 20"
+            - "Returns 100"
+          answer_index: 2
+          explanation: "Since \"mana\" is not in the dictionary, .get() returns the fallback value 20 without crashing."
+        - id: "q3"
+          prompt: "How do you add a new key \"rank\" with value \"Gold\" to dict player?"
+          options:
+            - "player.append(\"rank\", \"Gold\")"
+            - "player[\"rank\"] = \"Gold\""
+            - "player.rank == \"Gold\""
+            - "add player[\"rank\"] = \"Gold\""
+          answer_index: 1
+          explanation: "Assigning to a new key with player[\"rank\"] = \"Gold\" inserts it into the dictionary."
+        - id: "q4"
+          prompt: "What does stats.keys() give you?"
+          options:
+            - "Only the values"
+            - "All the key names in the dictionary"
+            - "A secret password"
+            - "The length of the dictionary"
+          answer_index: 1
+          explanation: ".keys() returns a view of all the keys stored in the dictionary."
+
+  - id: "conditionals"
+    order: 6
+    icon: "🔀"
+    title: "Making Decisions (if, elif, else)"
+    duration: "25 min"
+    summary: "Teach your programs to think and make choices based on conditions, comparisons, and True/False logic."
+    video:
+      id: "DZwmZ8Usvnk"
+      title: "Python Tutorial for Beginners 6: Conditionals and Booleans - If, Else, and Elif Statements"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "== vs ="
+        body: "One equals sign (=) stores a value in a variable. Two equals signs (==) checks if two things are equal! Other comparisons: !=, <, >, <=, >=."
+      - heading: "Indentation Matters!"
+        body: "Python uses 4 spaces of indentation to know which lines belong inside an if, elif, or else block."
+    code_example:
+      title: "rollercoaster.py"
+      code: |
+        height_cm = 145
+        has_ticket = True
+
+        if height_cm >= 140 and has_ticket:
+            print("Welcome aboard the Mega Coaster!")
+        elif not has_ticket:
+            print("Please grab a ticket at the booth first.")
+        else:
+            print("Sorry, you need to be at least 140cm tall.")
+    challenge: "Write a simple Grade / Rank Checker: take a score (0-100) and print 'S-Rank' for 90+, 'A-Rank' for 75-89, 'B-Rank' for 50-74, and 'Try Again!' under 50."
+    checklist:
+      - id: "cond_watch_video"
+        label: "Watch the Conditionals and Booleans video"
+      - id: "cond_booleans"
+        label: "Practice True/False comparisons with ==, !=, >, and <"
+      - id: "cond_logic"
+        label: "Combine two checks using 'and' or 'or'"
+      - id: "cond_challenge"
+        label: "Complete the Rank Checker if/elif/else challenge"
+    quiz:
+      id: "quiz-conditionals"
+      title: "Module 6 Checkpoint: Conditionals & Booleans"
+      questions:
+        - id: "q1"
+          prompt: "Which operator checks if two values are equal in Python?"
+          options:
+            - "="
+            - "=="
+            - "==="
+            - "equals"
+          answer_index: 1
+          explanation: "= assigns a variable, while == compares two values for equality."
+        - id: "q2"
+          prompt: "What does this evaluate to?\nTrue and False"
+          options:
+            - "True"
+            - "False"
+            - "None"
+            - "Error"
+          answer_index: 1
+          explanation: "With 'and', BOTH sides must be True for the whole condition to be True."
+        - id: "q3"
+          prompt: "How does Python group lines of code inside an if statement?"
+          options:
+            - "Curly braces { }"
+            - "begin and end keywords"
+            - "Indentation (spaces)"
+            - "Semicolons ;"
+          answer_index: 2
+          explanation: "Python relies on consistent indentation (usually 4 spaces) to define code blocks."
+        - id: "q4"
+          prompt: "What will print if x = 15?\nif x > 20:\n    print(\"Big\")\nelif x > 10:\n    print(\"Medium\")\nelse:\n    print(\"Small\")"
+          options:
+            - "\"Big\""
+            - "\"Medium\""
+            - "\"Small\""
+            - "\"Big\" and \"Medium\""
+          answer_index: 1
+          explanation: "15 > 20 is False, so Python checks elif x > 10 (True!) and prints \"Medium\", skipping else."
+
+  - id: "loops"
+    order: 7
+    icon: "🔁"
+    title: "Loops & Automation (for & while)"
+    duration: "25 min"
+    summary: "Stop repeating yourself! Use for loops and while loops to process lists, count numbers, and keep games running."
+    video:
+      id: "6iF8Xb7Z3wQ"
+      title: "Python Tutorial for Beginners 7: Loops and Iterations - For/While Loops"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "for Loops & range()"
+        body: "Use a for loop when you want to go through every item in a list, or repeat something a set number of times with range()."
+      - heading: "while Loops & break"
+        body: "A while loop keeps running as long as a condition stays True. Use break to jump out of a loop early!"
+    code_example:
+      title: "loops_demo.py"
+      code: |
+        # Loop through a list
+        snacks = ["apples", "cookies", "pizza"]
+        for snack in snacks:
+            print(f"I like {snack}!")
+
+        # Countdown using range(start, stop, step)
+        for num in range(5, 0, -1):
+            print(num)
+        print("Blast off! 🚀")
+    challenge: "Write a FizzBuzz mini-challenge: loop from 1 to 20. Print 'Fizz' for multiples of 3, 'Buzz' for multiples of 5, 'FizzBuzz' for both, or the number itself!"
+    checklist:
+      - id: "loop_watch_video"
+        label: "Watch the Loops and Iterations video"
+      - id: "loop_for_list"
+        label: "Loop over every item in a list with 'for'"
+      - id: "loop_range"
+        label: "Print numbers 1 to 10 using range(1, 11)"
+      - id: "loop_fizzbuzz"
+        label: "Solve the FizzBuzz 1-to-20 loop challenge"
+    quiz:
+      id: "quiz-loops"
+      title: "Module 7 Checkpoint: Loops"
+      questions:
+        - id: "q1"
+          prompt: "Which numbers does range(3) generate?"
+          options:
+            - "1, 2, 3"
+            - "0, 1, 2"
+            - "0, 1, 2, 3"
+            - "1, 2"
+          answer_index: 1
+          explanation: "range(3) starts at 0 by default and stops BEFORE 3, giving 0, 1, 2."
+        - id: "q2"
+          prompt: "Which keyword immediately exits out of a loop early?"
+          options:
+            - "stop"
+            - "exit"
+            - "break"
+            - "continue"
+          answer_index: 2
+          explanation: "'break' exits the loop completely, whereas 'continue' skips only the current iteration."
+        - id: "q3"
+          prompt: "How many times will this run?\ncount = 0\nwhile count < 3:\n    print(count)\n    count += 1"
+          options:
+            - "2 times"
+            - "3 times"
+            - "4 times"
+            - "Forever (infinite loop)"
+          answer_index: 1
+          explanation: "It runs when count is 0, 1, and 2 (3 times total). At 3, count < 3 becomes False and stops."
+        - id: "q4"
+          prompt: "What happens if a while loop's condition NEVER becomes False and there is no break?"
+          options:
+            - "Python stops it after 10 loops"
+            - "It becomes an infinite loop"
+            - "It runs backwards"
+            - "SyntaxError"
+          answer_index: 1
+          explanation: "A while loop repeats forever (an infinite loop) until its condition turns False or it hits a break."
+
+  - id: "functions-project"
+    order: 8
+    icon: "🎮"
+    title: "Functions & Build a Mini-Game"
+    duration: "35 min"
+    summary: "Organize your code into reusable building blocks called functions (def), then put everything together to build a playable Number Guessing Game!"
+    video:
+      id: "9Os0o3wzS_I"
+      title: "Python Tutorial for Beginners 8: Functions"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "Creating Functions with def"
+        body: "Functions let you bundle code under a name and reuse it anytime. You pass inputs via parameters, and send results back using return."
+      - heading: "Putting It All Together"
+        body: "In the mini-game below, you combine variables, random numbers, while loops, conditionals, and functions into one real game!"
+    code_example:
+      title: "guess_the_number.py"
+      code: |
+        import random
+
+        def play_game(max_num):
+            secret = random.randint(1, max_num)
+            tries = 0
+
+            while True:
+                guess = int(input(f"Guess a number (1-{max_num}): "))
+                tries += 1
+
+                if guess == secret:
+                    print(f"🎉 You got it in {tries} tries!")
+                    return tries
+                elif guess < secret:
+                    print("Too low! Go higher.")
+                else:
+                    print("Too high! Go lower.")
+
+        play_game(20)
+    challenge: "Type and play guess_the_number.py! Then upgrade it by giving the player a maximum of 5 lives (hint: stop the loop if tries == 5)."
+    checklist:
+      - id: "func_watch_video"
+        label: "Watch the Functions video"
+      - id: "func_return"
+        label: "Write a custom function using def and return"
+      - id: "func_play_game"
+        label: "Run and play the Number Guessing Game"
+      - id: "func_upgrade_lives"
+        label: "Upgrade the game with a 5-try limit!"
+    quiz:
+      id: "quiz-functions-project"
+      title: "Final Checkpoint: Functions & Games"
+      questions:
+        - id: "q1"
+          prompt: "Which keyword defines a new function in Python?"
+          options:
+            - "function"
+            - "def"
+            - "func"
+            - "define"
+          answer_index: 1
+          explanation: "Python uses 'def' (short for define) followed by the function name and parentheses."
+        - id: "q2"
+          prompt: "What does the 'return' keyword do inside a function?"
+          options:
+            - "Prints text to the screen"
+            - "Restarts the program"
+            - "Sends a value back to wherever the function was called and exits the function"
+            - "Deletes all variables"
+          answer_index: 2
+          explanation: "return hands a calculated result back to the caller (printing only displays text, return gives back data you can store in a variable)."
+        - id: "q3"
+          prompt: "What will this print?\ndef double(n):\n    return n * 2\n\nprint(double(7))"
+          options:
+            - "7"
+            - "14"
+            - "n * 2"
+            - "None"
+          answer_index: 1
+          explanation: "Calling double(7) passes 7 as n, computes 7 * 2 = 14, and returns 14 to print()."
+        - id: "q4"
+          prompt: "Why do programmers put code into functions?"
+          options:
+            - "To make files longer"
+            - "To reuse logic without copy-pasting and keep code organized"
+            - "Because Python doesn't allow loops outside functions"
+            - "To make variables global"
+          answer_index: 1
+          explanation: "Functions keep code modular, readable, and reusable so you don't repeat yourself."

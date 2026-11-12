@@ -161,6 +161,24 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
 
 ---
 
+### Phase 8: Interactive Python Curriculum, Video Lessons, Checklists & Quiz Engine
+1. **YAML Curriculum Engine (`curriculum.yaml` & `curriculum.py`)**:
+   - Structured 8 beginner-friendly Python modules (Setup & `print()`, Variables & Strings, Numbers & Input, Lists & Tuples, Dictionaries, Conditionals, Loops, and Functions & Number Guessing Game).
+   - Stored in YAML (`PyYAML`) so `.dockerignore` can safely continue ignoring `*.json` credential files without excluding lesson content.
+   - Cached loader (`@lru_cache`) validates topic ordering, checklist item IDs, quiz grading, and weighted overall completion percentages.
+2. **Roadmap Hub (`templates/home.html`)**:
+   - Displays personalized progress bar, stats cards (Modules Done, Tasks Checked, Quizzes Passed), a dynamic "Continue Learning" CTA, and freely accessible module cards.
+3. **Lesson View & Interactive Checklists (`templates/topic.html`, `/topic/<id>`, `POST /api/checklist`)**:
+   - Embeds distraction-free YouTube tutorials via `youtube-nocookie.com/embed/...` with direct YouTube fallback links.
+   - Includes plain-English key ideas, copyable Python code examples, and a hands-on mini-challenge per module.
+   - Interactive practice checkboxes save instantaneously to Firestore via CSRF-protected JSON requests (`X-CSRF-Token`), rejecting arbitrary unconfigured `item_id` values (`400`) and unauthenticated API calls (`401`).
+   - Supports manual module completion/reopening via CSRF-protected `POST /topic/<id>/toggle`.
+4. **Quiz Checkpoint Engine (`templates/quiz.html`, `/quiz/<id>`)**:
+   - Multiple-choice quizzes (75% passing threshold) graded server-side against `curriculum.yaml`.
+   - Displays instant pass/fail feedback, previous scores, and detailed per-question explanations for wrong answers, storing attempts directly in Firestore `progress/{username}`.
+
+---
+
 ## 🗄️ Database Schemas
 
 ### Firestore Document Structure (Production)
@@ -208,8 +226,9 @@ firestore/
 | **Omitted User-Agent Bypass** | Strict equality check rejects missing or empty headers | `db.py:validate_and_refresh_session` |
 | **Unattended Device Session Abandonment** | 10-minute sliding inactivity timeout auto-purges token | `db.py:INACTIVITY_TIMEOUT_SECONDS` |
 | **Redundant Hot-Path Database Writes** | 60-second sliding update throttling cuts Firestore writes by 90–95% | `db.py:ACTIVITY_UPDATE_INTERVAL_SECONDS` |
-| **Cross-Site Request Forgery (CSRF)** | Synchronizer CSRF tokens (`secrets.compare_digest`) on all state mutations | `app.py` (/logout, /admin/*) |
-| **Unauthorized Endpoint Access** | `@app.before_request` barrier; all non-whitelisted routes 302 to `/login` | `app.py:enforce_authentication` |
+| **Cross-Site Request Forgery (CSRF)** | Synchronizer CSRF tokens (`secrets.compare_digest`) on all state mutations | `app.py` (`/logout`, `/admin/*`, `/api/checklist`, `/topic/*`, `/quiz/*`) |
+| **Checklist Key Injection** | Whitelist validation confirms `item_id` exists in `curriculum.yaml` before writing | `curriculum.py:is_valid_checklist_item` |
+| **Unauthorized Endpoint Access** | `@app.before_request` barrier; browser routes 302 to `/login`, `/api/*` returns `401` | `app.py:enforce_authentication` |
 | **Privilege Escalation** | `@require_superuser` decorator restricts `/admin` endpoints (403 for students) | `app.py:admin_*` |
 | **Accidental Self-Lockout** | Active superuser is blocked from deleting their own account | `app.py:admin_delete_user` |
 | **Orphaned Sessions on Deletion** | Cascading cleanup revokes active tokens and deletes progress on user deletion | `db.py:delete_user` |
@@ -218,9 +237,9 @@ firestore/
 
 ---
 
-## 🧪 Automated Testing Suite (`test_auth.py`)
+## 🧪 Automated Testing Suite (`test_auth.py` & `test_curriculum.py`)
 
-The project includes an automated test suite covering all security constraints and workflows:
+The project includes 23 automated test cases covering security constraints, Firestore persistence, and curriculum interactions:
 
 | Test Case | Scenario Verified | Result |
 | :--- | :--- | :--- |
@@ -241,11 +260,17 @@ The project includes an automated test suite covering all security constraints a
 | `test_student_blocked_from_admin` | Regular student accessing `/admin` is rejected (403) | ✅ Passed |
 | `test_superuser_can_access_admin_and_manage_users` | Superuser accesses `/admin`, creates and deletes users in Firestore | ✅ Passed |
 | `test_superuser_cannot_delete_self` | Superuser attempting to delete self is rejected | ✅ Passed |
+| `test_curriculum_yaml_integrity` | All YAML topics, checklists, video IDs, and quiz options validate cleanly | ✅ Passed |
+| `test_unauthenticated_blocked_from_curriculum_and_api` | Unauthenticated requests to `/topic/*`, `/quiz/*`, and `/api/checklist` are blocked | ✅ Passed |
+| `test_roadmap_home_and_topic_detail` | Roadmap dashboard, topic views, and 404 handling render properly | ✅ Passed |
+| `test_checklist_api_csrf_validation_and_persistence` | Checklist API enforces CSRF (403), validates IDs (400), and saves to Firestore | ✅ Passed |
+| `test_topic_completion_toggle` | Topic completion toggle requires CSRF and updates Firestore state | ✅ Passed |
+| `test_quiz_submission_and_grading` | Quizzes enforce CSRF, calculate pass/fail, and store scores in Firestore | ✅ Passed |
 
 **Execution**:
 ```bash
-.venv/bin/python test_auth.py
-# Ran 17 tests in 13.3s against Cloud Firestore -> OK
+.venv/bin/python -m unittest test_auth.py test_curriculum.py -v
+# Ran 23 tests against Cloud Firestore -> OK
 ```
 
 ---
@@ -292,14 +317,13 @@ python app.py
 
 ### 4. Run Automated Tests
 ```bash
-python test_auth.py
+python -m unittest test_auth.py test_curriculum.py -v
 ```
 
 ---
 
-## 🗺️ Next Milestones: Building the Curriculum
-With the authentication barrier, database persistence, session security, and guardrails established, the next phase will build:
-1. **Curriculum Engine**: Structured YAML/JSON files defining Python milestones (Variables, Loops, Functions, Lists, Dicts).
-2. **YouTube Video Embeds**: Focused video player components embedded directly within each milestone.
-3. **Interactive Checklists**: Real-time checklist toggles hooked to the Firestore progress API.
-4. **Quiz Engine**: Interactive multi-choice checkpoints verifying comprehension before unlocking subsequent topics.
+## 🗺️ Future Enhancements
+With the core curriculum, video lessons, interactive checklists, quizzes, and Firestore tracking live, future additions could include:
+1. **Intermediate Track**: File I/O, Error Handling (`try`/`except`), Modules & APIs, and Object-Oriented Programming.
+2. **Mini-Project Gallery**: Dedicated guided builds (Rock-Paper-Scissors, Text Adventure, Discord/Telegram bot basics).
+3. **In-Browser Python Runner**: Optional Pyodide (WebAssembly) code runner inside lesson pages so he can test code directly without leaving the site.

@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Module {{ topic.order }}: {{ topic.title }} - Python Roadmap{% endblock %}
+
+{% block body %}
+{% include "_navbar.html" %}
+
+<main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- Breadcrumb & Header -->
+    <div class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <a 
+                href="/" 
+                class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/70 hover:bg-slate-800 text-slate-300 hover:text-white transition-all"
+            >
+                ← Back to Roadmap
+            </a>
+
+            <div class="flex items-center gap-2">
+                <span class="font-mono text-xs px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+                    Module {{ topic.order }} • {{ topic.duration }}
+                </span>
+                {% if is_completed %}
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    ✓ Completed
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex items-start gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center text-3xl shrink-0">
+                {{ topic.icon }}
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                    {{ topic.title }}
+                </h1>
+                <p class="text-sm sm:text-base text-slate-300 mt-1 leading-relaxed">
+                    {{ topic.summary }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Two-Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <!-- Left Column: Video, Concepts, Code Example, Challenge (2 columns) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Video Player Card -->
+            <section class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="px-5 py-3.5 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-white">
+                        <span>🎬</span>
+                        <span>{{ topic.video.title }}</span>
+                    </div>
+                    <span class="text-xs text-slate-400 font-mono">by {{ topic.video.author }}</span>
+                </div>
+
+                <div class="aspect-video w-full bg-black">
+                    <iframe 
+                        class="w-full h-full"
+                        src="https://www.youtube-nocookie.com/embed/{{ topic.video.id }}?rel=0"
+                        title="{{ topic.video.title }}"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+
+                <div class="px-5 py-3 bg-slate-950/50 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <a 
+                        href="https://www.youtube.com/watch?v={{ topic.video.id }}" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        class="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                    >
+                        Video not loading? Watch directly on YouTube ↗
+                    </a>
+                    {% if topic.video.bonus_id %}
+                    <a 
+                        href="https://www.youtube.com/watch?v={{ topic.video.bonus_id }}" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        class="text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                    >
+                        🌟 {{ topic.video.bonus_title }} ↗
+                    </a>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Key Concepts -->
+            <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>💡</span> Key Ideas
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {% for concept in topic.concepts %}
+                    <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+                        <h3 class="text-sm font-bold text-emerald-300">{{ concept.heading }}</h3>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">{{ concept.body }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- Code Example -->
+            {% if topic.code_example %}
+            <section class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="px-5 py-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/60">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-mono text-emerald-400 font-semibold">{{ topic.code_example.title }}</span>
+                    </div>
+                    <button 
+                        type="button"
+                        id="copy-code-btn"
+                        onclick="copyCodeSnippet()"
+                        class="text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                    >
+                        Copy Code
+                    </button>
+                </div>
+                <pre class="p-5 overflow-x-auto text-xs sm:text-sm font-mono text-slate-200 leading-relaxed bg-slate-950/80"><code id="lesson-code">{{ topic.code_example.code }}</code></pre>
+            </section>
+            {% endif %}
+
+            <!-- Hands-On Mini-Challenge -->
+            <section class="rounded-2xl border border-amber-500/30 bg-amber-950/15 p-6 space-y-2">
+                <h2 class="text-base font-bold text-amber-300 flex items-center gap-2">
+                    <span>⚡</span> Try It Yourself Challenge
+                </h2>
+                <p class="text-sm text-slate-200 leading-relaxed">
+                    {{ topic.challenge }}
+                </p>
+            </section>
+        </div>
+
+        <!-- Right Column: Interactive Checklist, Mark Complete, Quiz CTA -->
+        <aside class="space-y-6 lg:sticky lg:top-24">
+            <!-- Interactive Checklist Card -->
+            <section class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>✅</span> Practice Checklist
+                    </h2>
+                    <span id="checklist-counter" class="font-mono text-xs px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-cyan-400">
+                        {{ checklist_done }}/{{ checklist_total }}
+                    </span>
+                </div>
+
+                <div class="space-y-2.5">
+                    {% for item in topic.checklist %}
+                    {% set checked = checklist_map.get(item.id, False) %}
+                    <label 
+                        for="check-{{ item.id }}"
+                        class="flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none {% if checked %}bg-emerald-950/25 border-emerald-500/30 text-slate-200{% else %}bg-slate-950/50 border-slate-800/80 hover:border-slate-700 text-slate-300{% endif %}"
+                    >
+                        <input 
+                            type="checkbox"
+                            id="check-{{ item.id }}"
+                            data-item-id="{{ item.id }}"
+                            class="checklist-checkbox mt-0.5 h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500 cursor-pointer shrink-0"
+                            {% if checked %}checked{% endif %}
+                        >
+                        <span class="text-xs sm:text-sm leading-snug {% if checked %}line-through text-slate-400{% endif %}">
+                            {{ item.label }}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div id="checklist-status" class="text-[11px] font-mono text-slate-500 h-4 flex items-center">
+                    Progress saves automatically to cloud.
+                </div>
+            </section>
+
+            <!-- Quiz Card -->
+            {% if topic.quiz %}
+            <section class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>🏅</span> Module Quiz
+                    </h2>
+                    {% if quiz_result %}
+                        {% if quiz_result.passed %}
+                        <span class="text-xs font-mono font-semibold text-emerald-400">
+                            Passed ({{ quiz_result.score }}/{{ quiz_result.total }})
+                        </span>
+                        {% else %}
+                        <span class="text-xs font-mono font-semibold text-amber-400">
+                            Best: {{ quiz_result.score }}/{{ quiz_result.total }}
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Test what you learned with {{ topic.quiz.questions|length }} quick questions.
+                </p>
+                <a 
+                    href="/quiz/{{ topic.quiz.id }}" 
+                    class="block w-full text-center py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition-all"
+                >
+                    {% if quiz_result %}Retake Module Quiz →{% else %}Take Module Quiz →{% endif %}
+                </a>
+            </section>
+            {% endif %}
+
+            <!-- Complete / Reopen Module Button -->
+            <section class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3">
+                <form method="POST" action="/topic/{{ topic.id }}/toggle">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% if is_completed %}
+                    <input type="hidden" name="completed" value="false">
+                    <button 
+                        type="submit"
+                        class="w-full py-3 px-4 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-sm transition-all cursor-pointer"
+                    >
+                        ↺ Reopen Module
+                    </button>
+                    {% else %}
+                    <input type="hidden" name="completed" value="true">
+                    <button 
+                        type="submit"
+                        class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 transition-all cursor-pointer"
+                    >
+                        ✓ Mark Module Complete
+                    </button>
+                    {% endif %}
+                </form>
+            </section>
+        </aside>
+    </div>
+
+    <!-- Bottom Module Navigation -->
+    <div class="pt-6 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
+        {% if prev_topic %}
+        <a 
+            href="/topic/{{ prev_topic.id }}" 
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900/70 hover:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all"
+        >
+            <span>←</span>
+            <span>Previous: {{ prev_topic.title }}</span>
+        </a>
+        {% else %}
+        <div></div>
+        {% endif %}
+
+        {% if next_topic %}
+        <a 
+            href="/topic/{{ next_topic.id }}" 
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs sm:text-sm font-semibold text-emerald-300 transition-all"
+        >
+            <span>Next: {{ next_topic.title }}</span>
+            <span>→</span>
+        </a>
+        {% else %}
+        <a 
+            href="/" 
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs sm:text-sm font-semibold text-emerald-300 transition-all"
+        >
+            <span>Back to Full Roadmap</span>
+            <span>🏁</span>
+        </a>
+        {% endif %}
+    </div>
+</main>
+
+<script>
+    const CSRF_TOKEN = "{{ csrf_token() }}";
+    const TOTAL_ITEMS = {{ checklist_total }};
+
+    function copyCodeSnippet() {
+        const codeEl = document.getElementById("lesson-code");
+        const btn = document.getElementById("copy-code-btn");
+        if (!codeEl || !navigator.clipboard) return;
+        navigator.clipboard.writeText(codeEl.textContent).then(() => {
+            btn.textContent = "Copied ✓";
+            setTimeout(() => { btn.textContent = "Copy Code"; }, 1800);
+        });
+    }
+
+    function updateChecklistStyles(checkbox) {
+        const label = checkbox.closest("label");
+        const textSpan = label.querySelector("span");
+        if (checkbox.checked) {
+            label.classList.remove("bg-slate-950/50", "border-slate-800/80", "text-slate-300");
+            label.classList.add("bg-emerald-950/25", "border-emerald-500/30", "text-slate-200");
+            textSpan.classList.add("line-through", "text-slate-400");
+        } else {
+            label.classList.add("bg-slate-950/50", "border-slate-800/80", "text-slate-300");
+            label.classList.remove("bg-emerald-950/25", "border-emerald-500/30", "text-slate-200");
+            textSpan.classList.remove("line-through", "text-slate-400");
+        }
+        const doneCount = document.querySelectorAll(".checklist-checkbox:checked").length;
+        const counterEl = document.getElementById("checklist-counter");
+        if (counterEl) counterEl.textContent = `${doneCount}/${TOTAL_ITEMS}`;
+    }
+
+    document.querySelectorAll(".checklist-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("change", async () => {
+            const itemId = checkbox.dataset.itemId;
+            const completed = checkbox.checked;
+            const statusEl = document.getElementById("checklist-status");
+
+            updateChecklistStyles(checkbox);
+            if (statusEl) {
+                statusEl.textContent = "Saving...";
+                statusEl.className = "text-[11px] font-mono text-cyan-400 h-4 flex items-center";
+            }
+
+            try {
+                const res = await fetch("/api/checklist", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": CSRF_TOKEN,
+                    },
+                    body: JSON.stringify({ item_id: itemId, completed: completed }),
+                });
+
+                if (res.status === 401) {
+                    window.location.href = "/login";
+                    return;
+                }
+                if (!res.ok) {
+                    throw new Error("Save failed");
+                }
+
+                if (statusEl) {
+                    statusEl.textContent = "Saved to cloud ✓";
+                    statusEl.className = "text-[11px] font-mono text-emerald-400 h-4 flex items-center";
+                }
+            } catch (err) {
+                // Revert visual toggle on error
+                checkbox.checked = !completed;
+                updateChecklistStyles(checkbox);
+                if (statusEl) {
+                    statusEl.textContent = "Could not save. Please check connection.";
+                    statusEl.className = "text-[11px] font-mono text-rose-400 h-4 flex items-center";
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

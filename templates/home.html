@@ -3,95 +3,225 @@
 {% block title %}Home - Python Roadmap{% endblock %}
 
 {% block body %}
-<!-- Top Navigation Bar -->
-<header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <span class="text-2xl">🐍</span>
-            <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                py-rm
-            </span>
-            <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Python Roadmap
-            </span>
-        </div>
+{% include "_navbar.html" %}
 
-        <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2 text-sm text-slate-300">
-                <span class="w-2 h-2 rounded-full {% if current_user.is_superuser %}bg-cyan-400{% else %}bg-emerald-500{% endif %} animate-pulse"></span>
-                <span class="font-mono text-xs bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700/60">
-                    {{ current_user.username }}
+<main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
+    <!-- Hero Greeting & Overall Progress -->
+    <section class="bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-emerald-950/30 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div class="space-y-2 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                    <span>👋</span>
+                    <span>Hello! Ready to code, <span class="font-mono text-emerald-200">{{ current_user.username }}</span>?</span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+                    {{ curriculum.title }}
+                </h1>
+                <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+                    {{ curriculum.subtitle }}
+                </p>
+            </div>
+
+            <!-- Next Step CTA -->
+            <div class="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-3 shrink-0">
+                {% if summary.next_topic %}
+                <a 
+                    href="/topic/{{ summary.next_topic.id }}" 
+                    class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 transition-all"
+                >
+                    <span>{{ summary.next_topic.icon }}</span>
+                    <span>
+                        {% if summary.completed_topics_count == 0 %}
+                            Start Module 1
+                        {% else %}
+                            Continue: Module {{ summary.next_topic.order }}
+                        {% endif %}
+                    </span>
+                    <span>→</span>
+                </a>
+                <span class="text-xs text-slate-400 font-mono">
+                    Up next: {{ summary.next_topic.title }}
                 </span>
-                {% if current_user.is_superuser %}
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                    Admin
-                </span>
+                {% else %}
+                <div class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold text-sm">
+                    <span>🏆</span>
+                    <span>All {{ summary.total_topics }} Modules Completed!</span>
+                </div>
                 {% endif %}
             </div>
-            {% if current_user.is_superuser %}
-            <a 
-                href="/admin" 
-                class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 transition-all flex items-center gap-1.5"
-            >
-                <span>⚡</span> Admin Dashboard
-            </a>
-            {% endif %}
-            <form method="POST" action="/logout" class="inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button 
-                    type="submit"
-                    class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
-                >
-                    Log Out
-                </button>
-            </form>
         </div>
-    </div>
-</header>
 
-<!-- Main Container -->
-<main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-center items-center text-center">
-    <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 text-4xl mb-6 shadow-xl shadow-emerald-500/10">
-        👋
-    </div>
-
-    <h1 class="text-5xl sm:text-6xl font-extrabold tracking-tight text-white mb-4">
-        Hello!
-    </h1>
-
-    <p class="text-lg sm:text-xl text-slate-300 max-w-xl mx-auto leading-relaxed mb-8">
-        Welcome to your personal Python learning space, <span class="font-semibold text-emerald-400">{{ current_user.username }}</span>.
-    </p>
-
-    <!-- Roadmap Placeholder Card -->
-    <div class="w-full max-w-2xl bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-left backdrop-blur-sm shadow-xl">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                <span>🚀</span> Next Up: The Curriculum
-            </h2>
-            <span class="text-xs font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                Phase 1 Ready
-            </span>
-        </div>
-        <p class="text-sm text-slate-400 leading-relaxed mb-6">
-            Authentication is verified and deployed. Topics, interactive video lessons, progress checklists, and quizzes are being hooked up next!
-        </p>
-
-        <div class="space-y-3 font-mono text-xs">
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-300">
-                <span class="text-emerald-400">✓</span>
-                <span>Protected routing & session security</span>
+        <!-- Progress Bar & Stats -->
+        <div class="relative z-10 mt-8 pt-6 border-t border-slate-800/80 space-y-4">
+            <div class="flex items-center justify-between text-xs sm:text-sm">
+                <span class="font-semibold text-slate-300">Overall Roadmap Progress</span>
+                <span class="font-mono font-bold text-emerald-400">{{ summary.overall_percent }}%</span>
             </div>
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-300">
-                <span class="text-emerald-400">✓</span>
-                <span>Rate-limiting & anti-abuse guardrails</span>
+            <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div 
+                    class="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 rounded-full transition-all duration-500"
+                    style="width: {{ summary.overall_percent }}%;"
+                ></div>
             </div>
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-400">
-                <span class="text-amber-400">⏳</span>
-                <span>Python core modules, YouTube video embeds & quizzes</span>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Modules Done</p>
+                        <p class="text-2xl font-extrabold font-mono text-white mt-0.5">
+                            {{ summary.completed_topics_count }}<span class="text-sm text-slate-500">/{{ summary.total_topics }}</span>
+                        </p>
+                    </div>
+                    <span class="text-2xl">📚</span>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Tasks Checked</p>
+                        <p class="text-2xl font-extrabold font-mono text-cyan-400 mt-0.5">
+                            {{ summary.completed_checklist }}<span class="text-sm text-slate-500">/{{ summary.total_checklist }}</span>
+                        </p>
+                    </div>
+                    <span class="text-2xl">✅</span>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Quizzes Passed</p>
+                        <p class="text-2xl font-extrabold font-mono text-amber-400 mt-0.5">
+                            {{ summary.passed_quizzes }}<span class="text-sm text-slate-500">/{{ summary.total_quizzes }}</span>
+                        </p>
+                    </div>
+                    <span class="text-2xl">🏅</span>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <!-- Roadmap Modules Grid -->
+    <section class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span>🗺️</span> Your Python Learning Path
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-400">
+                    All modules are unlocked—go in order or jump to any topic you want to practice!
+                </p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for card in summary.topic_cards %}
+            {% set t = card.topic %}
+            <div class="group rounded-2xl border p-6 transition-all flex flex-col justify-between {% if card.is_completed %}bg-emerald-950/15 border-emerald-500/30 hover:border-emerald-500/50{% else %}bg-slate-900/60 border-slate-800 hover:border-slate-700{% endif %}">
+                <div>
+                    <!-- Card Top Row -->
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0 {% if card.is_completed %}bg-emerald-500/15 border border-emerald-500/30{% else %}bg-slate-800/80 border border-slate-700/70{% endif %}">
+                                {{ t.icon }}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+                                        Module {{ t.order }}
+                                    </span>
+                                    <span class="text-slate-600">•</span>
+                                    <span class="font-mono text-[11px] text-slate-400">{{ t.duration }}</span>
+                                </div>
+                                <h3 class="text-base sm:text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
+                                    <a href="/topic/{{ t.id }}">{{ t.title }}</a>
+                                </h3>
+                            </div>
+                        </div>
+
+                        {% if card.is_completed %}
+                        <span class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                            <span>✓</span> Done
+                        </span>
+                        {% elif card.checklist_done > 0 %}
+                        <span class="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                            In Progress
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Summary -->
+                    <p class="text-sm text-slate-400 leading-relaxed mb-5">
+                        {{ t.summary }}
+                    </p>
+                </div>
+
+                <!-- Card Footer: Progress & Actions -->
+                <div class="pt-4 border-t border-slate-800/80 space-y-4">
+                    <div class="flex items-center justify-between text-xs font-mono">
+                        <span class="text-slate-400">
+                            Checklist:
+                            <strong class="{% if card.checklist_done == card.checklist_total and card.checklist_total > 0 %}text-emerald-400{% else %}text-cyan-400{% endif %}">
+                                {{ card.checklist_done }}/{{ card.checklist_total }}
+                            </strong>
+                        </span>
+
+                        {% if t.quiz %}
+                            {% if card.quiz_result %}
+                                {% if card.quiz_result.passed %}
+                                <span class="text-emerald-400 font-semibold">
+                                    🏅 Quiz: {{ card.quiz_result.score }}/{{ card.quiz_result.total }}
+                                </span>
+                                {% else %}
+                                <span class="text-amber-400 font-semibold">
+                                    📝 Quiz: {{ card.quiz_result.score }}/{{ card.quiz_result.total }} (Retry)
+                                </span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-slate-500">Quiz: Not taken</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-center gap-2.5">
+                        <a 
+                            href="/topic/{{ t.id }}" 
+                            class="flex-1 text-center py-2.5 px-4 rounded-xl text-xs font-semibold transition-all {% if card.is_completed %}bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700{% else %}bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30{% endif %}"
+                        >
+                            {% if card.is_completed %}Review Lesson{% else %}Open Lesson →{% endif %}
+                        </a>
+                        {% if t.quiz %}
+                        <a 
+                            href="/quiz/{{ t.quiz.id }}" 
+                            class="py-2.5 px-4 rounded-xl text-xs font-semibold border border-slate-700 hover:border-amber-500/40 bg-slate-950/60 hover:bg-amber-500/10 text-slate-300 hover:text-amber-300 transition-all"
+                        >
+                            Quiz
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Helpful Coding Tip -->
+    <section class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start sm:items-center gap-3">
+            <span class="text-2xl">💻</span>
+            <div>
+                <h3 class="text-sm font-bold text-white">Where should you type and test your Python code?</h3>
+                <p class="text-xs text-slate-400 mt-0.5">
+                    Use <strong class="text-slate-200">VS Code / IDLE</strong> on your computer, or practice in your browser with any online Python compiler!
+                </p>
+            </div>
+        </div>
+        <a 
+            href="https://www.programiz.com/python-programming/online-compiler/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="shrink-0 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-200 hover:text-white transition-all text-center"
+        >
+            Open Online Python Editor ↗
+        </a>
+    </section>
 </main>
 {% endblock %}
-

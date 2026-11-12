@@ -29,6 +29,7 @@ pyasn1==0.6.5
 pyasn1_modules==0.4.2
 pycparser==3.12
 python-dotenv==1.2.4
+PyYAML==6.0.3
 requests==2.34.2
 typing_extensions==4.16.0
 urllib3==2.8.0

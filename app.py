@@ -1,6 +1,7 @@
 import os
 import secrets
 from functools import wraps
+from typing import Optional
 from flask import (
     Flask,
     render_template,
@@ -12,6 +13,7 @@ from flask import (
     Response,
     g,
     abort,
+    jsonify,
 )
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -27,6 +29,18 @@ from db import (
     create_or_update_user,
     delete_user,
     list_all_users_with_progress,
+    get_user_progress,
+    update_checklist_item,
+    update_topic_completion,
+    save_quiz_result,
+)
+from curriculum import (
+    get_curriculum_data,
+    get_topic,
+    get_quiz,
+    is_valid_checklist_item,
+    grade_quiz,
+    compute_progress_summary,
 )
 
 app = Flask(__name__)
@@ -67,6 +81,14 @@ limiter = Limiter(
 )
 
 
+def _verify_csrf_or_abort(submitted_token: Optional[str] = None) -> None:
+    """Validate synchronizer CSRF token or raise HTTP 403."""
+    token = submitted_token if submitted_token is not None else request.form.get("csrf_token", "")
+    session_csrf = session.get("csrf_token", "")
+    if not token or not session_csrf or not secrets.compare_digest(str(token), str(session_csrf)):
+        abort(403)
+
+
 @app.context_processor
 def inject_csrf_token():
     def get_csrf_token():
@@ -94,8 +116,11 @@ def enforce_authentication():
     if request.path in PUBLIC_PATHS:
         return None
 
+    is_api = request.path.startswith("/api/")
     token = session.get("session_token")
     if not token:
+        if is_api:
+            return jsonify({"error": "Authentication required."}), 401
         return redirect(url_for("login"))
 
     user = validate_and_refresh_session(
@@ -104,6 +129,8 @@ def enforce_authentication():
     )
     if not user:
         session.clear()
+        if is_api:
+            return jsonify({"error": "Session expired or invalid."}), 401
         flash("Your session has expired or was terminated. Please log in again.", "warning")
         return redirect(url_for("login"))
 
@@ -113,7 +140,122 @@ def enforce_authentication():
 @app.route("/")
 def home():
     user = getattr(g, "current_user", None) or {"username": "Learner"}
-    return render_template("home.html", current_user=user)
+    curriculum = get_curriculum_data()
+    progress = get_user_progress(user["username"])
+    summary = compute_progress_summary(progress)
+    return render_template(
+        "home.html",
+        current_user=user,
+        curriculum=curriculum,
+        summary=summary,
+    )
+
+
+@app.route("/topic/<topic_id>")
+def topic_detail(topic_id: str):
+    topic, prev_topic, next_topic = get_topic(topic_id)
+    if not topic:
+        abort(404)
+
+    user = g.current_user
+    progress = get_user_progress(user["username"])
+    checklist_map = progress.get("checklist", {})
+    is_completed = topic_id in set(progress.get("completed_topics", []))
+
+    quiz = topic.get("quiz")
+    quiz_result = progress.get("quiz_scores", {}).get(quiz["id"]) if quiz else None
+
+    items = topic.get("checklist", [])
+    checklist_done = sum(1 for item in items if checklist_map.get(item["id"]))
+
+    return render_template(
+        "topic.html",
+        current_user=user,
+        topic=topic,
+        prev_topic=prev_topic,
+        next_topic=next_topic,
+        checklist_map=checklist_map,
+        checklist_done=checklist_done,
+        checklist_total=len(items),
+        is_completed=is_completed,
+        quiz_result=quiz_result,
+    )
+
+
+@app.route("/topic/<topic_id>/toggle", methods=["POST"])
+def toggle_topic(topic_id: str):
+    _verify_csrf_or_abort()
+    topic, _, _ = get_topic(topic_id)
+    if not topic:
+        abort(404)
+
+    completed = request.form.get("completed", "").lower() == "true"
+    update_topic_completion(g.current_user["username"], topic_id, completed)
+
+    if completed:
+        flash(f"Awesome! Marked '{topic['title']}' as completed.", "success")
+    else:
+        flash(f"Reopened '{topic['title']}' for review.", "info")
+
+    return redirect(url_for("topic_detail", topic_id=topic_id))
+
+
+@app.route("/api/checklist", methods=["POST"])
+def toggle_checklist():
+    payload = request.get_json(silent=True) or {}
+    csrf_header = request.headers.get("X-CSRF-Token")
+    submitted_csrf = csrf_header if csrf_header is not None else payload.get("csrf_token", "")
+    _verify_csrf_or_abort(submitted_csrf)
+
+    item_id = str(payload.get("item_id", "")).strip()
+    if not item_id or not is_valid_checklist_item(item_id):
+        return jsonify({"error": "Invalid checklist item ID."}), 400
+
+    completed = bool(payload.get("completed", False))
+    update_checklist_item(g.current_user["username"], item_id, completed)
+    return jsonify({"ok": True, "item_id": item_id, "completed": completed})
+
+
+@app.route("/quiz/<quiz_id>", methods=["GET", "POST"])
+def quiz_view(quiz_id: str):
+    topic, quiz = get_quiz(quiz_id)
+    if not topic or not quiz:
+        abort(404)
+
+    user = g.current_user
+    _, _, next_topic = get_topic(topic["id"])
+    progress = get_user_progress(user["username"])
+    previous_result = progress.get("quiz_scores", {}).get(quiz_id)
+    is_topic_completed = topic["id"] in set(progress.get("completed_topics", []))
+
+    graded = None
+    if request.method == "POST":
+        _verify_csrf_or_abort()
+        graded = grade_quiz(quiz, request.form)
+        save_quiz_result(
+            username=user["username"],
+            quiz_id=quiz_id,
+            score=graded["score"],
+            total=graded["total"],
+            passed=graded["passed"],
+        )
+        previous_result = {
+            "score": graded["score"],
+            "total": graded["total"],
+            "passed": graded["passed"],
+        }
+
+    return render_template(
+        "quiz.html",
+        current_user=user,
+        topic=topic,
+        next_topic=next_topic,
+        quiz=quiz,
+        graded=graded,
+        previous_result=previous_result,
+        is_topic_completed=is_topic_completed,
+        pass_threshold=get_curriculum_data()["pass_threshold_percent"],
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -180,10 +322,7 @@ def admin_dashboard():
 @require_superuser
 @limiter.limit("10 per minute", key_func=get_remote_address)
 def admin_create_user():
-    submitted_token = request.form.get("csrf_token", "")
-    session_csrf = session.get("csrf_token", "")
-    if not submitted_token or not session_csrf or not secrets.compare_digest(submitted_token, session_csrf):
-        abort(403)
+    _verify_csrf_or_abort()
 
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "")
@@ -207,10 +346,7 @@ def admin_create_user():
 @require_superuser
 @limiter.limit("10 per minute", key_func=get_remote_address)
 def admin_delete_user():
-    submitted_token = request.form.get("csrf_token", "")
-    session_csrf = session.get("csrf_token", "")
-    if not submitted_token or not session_csrf or not secrets.compare_digest(submitted_token, session_csrf):
-        abort(403)
+    _verify_csrf_or_abort()
 
     username = request.form.get("username", "").strip().lower()
     current_username = g.current_user["username"].strip().lower()
@@ -231,10 +367,7 @@ def admin_delete_user():
 @app.route("/logout", methods=["POST"])
 def logout():
     # Verify CSRF token to prevent cross-site logout forgery
-    submitted_token = request.form.get("csrf_token", "")
-    session_csrf = session.get("csrf_token", "")
-    if not submitted_token or not session_csrf or not secrets.compare_digest(submitted_token, session_csrf):
-        abort(403)
+    _verify_csrf_or_abort()
 
     token = session.get("session_token")
     if token:
