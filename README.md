@@ -176,6 +176,8 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
 4. **Quiz Checkpoint Engine (`templates/quiz.html`, `/quiz/<id>`)**:
    - Multiple-choice quizzes (75% passing threshold) graded server-side against `curriculum.yaml`.
    - Displays instant pass/fail feedback, previous scores, and detailed per-question explanations for wrong answers, storing attempts directly in Firestore `progress/{username}`.
+5. **Strict Per-User Progress Isolation (`db.py:_empty_progress`)**:
+   - Eliminated a Python shallow-copy leak (`dict(DEFAULT_PROGRESS)`) where nested mutable `checklist`/`quiz_scores`/`completed_topics` containers were shared across accounts without existing Firestore documents. Every user now receives fresh independent containers.
 
 ---
 
@@ -239,7 +241,7 @@ firestore/
 
 ## 🧪 Automated Testing Suite (`test_auth.py` & `test_curriculum.py`)
 
-The project includes 23 automated test cases covering security constraints, Firestore persistence, and curriculum interactions:
+The project includes 24 automated test cases covering security constraints, Firestore persistence, and curriculum interactions:
 
 | Test Case | Scenario Verified | Result |
 | :--- | :--- | :--- |
@@ -266,11 +268,12 @@ The project includes 23 automated test cases covering security constraints, Fire
 | `test_checklist_api_csrf_validation_and_persistence` | Checklist API enforces CSRF (403), validates IDs (400), and saves to Firestore | ✅ Passed |
 | `test_topic_completion_toggle` | Topic completion toggle requires CSRF and updates Firestore state | ✅ Passed |
 | `test_quiz_submission_and_grading` | Quizzes enforce CSRF, calculate pass/fail, and store scores in Firestore | ✅ Passed |
+| `test_progress_strictly_isolated_between_users` | Progress updates on one account never bleed into another account without a Firestore doc | ✅ Passed |
 
 **Execution**:
 ```bash
 .venv/bin/python -m unittest test_auth.py test_curriculum.py -v
-# Ran 23 tests against Cloud Firestore -> OK
+# Ran 24 tests against Cloud Firestore -> OK
 ```
 
 ---

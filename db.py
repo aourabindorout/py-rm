@@ -262,11 +262,13 @@ def delete_user_sessions(user_id: Any) -> None:
 # Progress & Roadmap State
 # ---------------------------------------------------------
 
-DEFAULT_PROGRESS = {
-    "completed_topics": [],
-    "checklist": {},
-    "quiz_scores": {},
-}
+def _empty_progress() -> Dict[str, Any]:
+    """Return a fresh, independent empty progress structure."""
+    return {
+        "completed_topics": [],
+        "checklist": {},
+        "quiz_scores": {},
+    }
 
 
 def get_user_progress(username: str) -> Dict[str, Any]:
@@ -274,13 +276,13 @@ def get_user_progress(username: str) -> Dict[str, Any]:
     fs = get_firestore_client()
     doc = fs.collection("progress").document(clean_username).get()
     if doc.exists:
-        data = doc.to_dict()
+        data = doc.to_dict() or {}
         return {
-            "completed_topics": data.get("completed_topics", []),
-            "checklist": data.get("checklist", {}),
-            "quiz_scores": data.get("quiz_scores", {}),
+            "completed_topics": list(data.get("completed_topics") or []),
+            "checklist": dict(data.get("checklist") or {}),
+            "quiz_scores": dict(data.get("quiz_scores") or {}),
         }
-    return dict(DEFAULT_PROGRESS)
+    return _empty_progress()
 
 
 def save_user_progress(username: str, progress_data: Dict[str, Any]) -> None:

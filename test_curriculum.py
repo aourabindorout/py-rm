@@ -6,6 +6,7 @@ from curriculum import get_curriculum_data
 
 class CurriculumTestCase(unittest.TestCase):
     TEST_USER = "curriculum_tester"
+    SECOND_USER = "curriculum_sibling"
     TEST_PASS = "learnpython123"
 
     def setUp(self):
@@ -15,12 +16,14 @@ class CurriculumTestCase(unittest.TestCase):
         with app.app_context():
             init_db()
             delete_user(self.TEST_USER)
+            delete_user(self.SECOND_USER)
             create_or_update_user(self.TEST_USER, self.TEST_PASS, is_superuser=False)
 
     def tearDown(self):
         limiter.reset()
         with app.app_context():
             delete_user(self.TEST_USER)
+            delete_user(self.SECOND_USER)
 
     def _login_and_get_csrf(self) -> str:
         res = self.client.post(
@@ -179,6 +182,46 @@ class CurriculumTestCase(unittest.TestCase):
         prog = get_user_progress(self.TEST_USER)
         self.assertTrue(prog["quiz_scores"]["quiz-setup-hello"]["passed"])
         self.assertEqual(prog["quiz_scores"]["quiz-setup-hello"]["score"], 4)
+
+    def test_progress_strictly_isolated_between_users(self):
+        # Create second user with no progress document yet
+        create_or_update_user(self.SECOND_USER, self.TEST_PASS, is_superuser=False)
+
+        # User 1 logs in and completes a quiz, checklist item, and topic
+        csrf1 = self._login_and_get_csrf()
+        self.client.post(
+            "/quiz/quiz-setup-hello",
+            data={"csrf_token": csrf1, "q_q1": "1", "q_q2": "2", "q_q3": "1", "q_q4": "2"},
+        )
+        self.client.post(
+            "/api/checklist",
+            headers={"X-CSRF-Token": csrf1},
+            json={"item_id": "setup_watch_video", "completed": True},
+        )
+        self.client.post(
+            "/topic/setup-hello/toggle",
+            data={"csrf_token": csrf1, "completed": "true"},
+        )
+        # User 1 logs out
+        self.client.post("/logout", data={"csrf_token": csrf1})
+
+        # User 2 (no progress document in Firestore yet) must still have zero progress
+        sibling_prog = get_user_progress(self.SECOND_USER)
+        self.assertEqual(sibling_prog["completed_topics"], [])
+        self.assertEqual(sibling_prog["checklist"], {})
+        self.assertEqual(sibling_prog["quiz_scores"], {})
+
+        # Verify via HTTP login & home page for User 2
+        sibling_client = app.test_client()
+        sibling_client.post(
+            "/login",
+            data={"username": self.SECOND_USER, "password": self.TEST_PASS},
+            follow_redirects=True,
+        )
+        home_res = sibling_client.get("/")
+        self.assertEqual(home_res.status_code, 200)
+        self.assertIn(b"0%", home_res.data)
+        self.assertNotIn(b"Quiz: 4/4", home_res.data)
 
 
 if __name__ == "__main__":
