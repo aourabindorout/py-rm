@@ -50,7 +50,7 @@ flowchart TD
     SessionCheck -- No --> RedirectLogin[302 Redirect to /login]
     
     SessionCheck -- Yes --> ValidateSession{Validate in DB\nGoogle Cloud Firestore}
-    ValidateSession -- Expired > 10m --> DropSession[Delete Session & Redirect to /login]
+    ValidateSession -- Expired > 30m --> DropSession[Delete Session & Redirect to /login]
     ValidateSession -- Fingerprint Mismatch --> DropSession
     ValidateSession -- Valid --> RefreshTime[Update last_active_at]
     RefreshTime --> RenderProtected[Render Home / Curriculum / Quiz]
@@ -181,6 +181,19 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
 
 ---
 
+### Phase 9: Video Session Keep-Alive & Inactivity Buffer
+1. **The Lesson Dropout Problem**:
+   - High-quality video lessons range between 15 and 35 minutes.
+   - When a student watched an embedded YouTube video, the browser communicated directly with YouTube's iframe servers and sent 0 HTTP requests to Flask.
+   - The prior 10-minute server inactivity timeout (`600s`) expired while the student was actively learning. Clicking "Take Quiz" resulted in an unexpected redirect to `/login`.
+2. **Client-Side Background Heartbeat (`templates/base.html` & `app.py:/api/heartbeat`)**:
+   - Integrated an asynchronous heartbeat that automatically pings `/api/heartbeat` every 3 minutes (`180,000ms`) with the user's `X-CSRF-Token`.
+   - Utilizes `document.hidden` checks: heartbeats only fire when the student has the tab open and active. If the student closes their laptop or leaves the tab, heartbeats stop.
+3. **30-Minute Safety Inactivity Window (`db.py:INACTIVITY_TIMEOUT_SECONDS`)**:
+   - Raised the server-side idle timeout from 10 minutes (600s) to 30 minutes (1800s), comfortably accommodating longer focus sessions while still automatically revoking sessions on abandoned devices.
+
+---
+
 ## 🗄️ Database Schemas
 
 ### Firestore Document Structure (Production)
@@ -226,7 +239,8 @@ firestore/
 | **Cookie Replay Attack (Stolen Cookie)** | Server-side token storage + immediate DB deletion on logout | `db.py:delete_session` |
 | **Naive Session Replay Across Browsers** | SHA-256 browser `User-Agent` consistency check (defense-in-depth heuristic) | `db.py:validate_and_refresh_session` |
 | **Omitted User-Agent Bypass** | Strict equality check rejects missing or empty headers | `db.py:validate_and_refresh_session` |
-| **Unattended Device Session Abandonment** | 10-minute sliding inactivity timeout auto-purges token | `db.py:INACTIVITY_TIMEOUT_SECONDS` |
+| **Unattended Device Session Abandonment** | 30-minute sliding inactivity timeout auto-purges token | `db.py:INACTIVITY_TIMEOUT_SECONDS` |
+| **In-Video Session Drop Prevention** | 3-minute background keep-alive ping (`POST /api/heartbeat`) refreshes active session while student watches video | `templates/base.html` & `app.py:heartbeat` |
 | **Redundant Hot-Path Database Writes** | 60-second sliding update throttling cuts Firestore writes by 90–95% | `db.py:ACTIVITY_UPDATE_INTERVAL_SECONDS` |
 | **Cross-Site Request Forgery (CSRF)** | Synchronizer CSRF tokens (`secrets.compare_digest`) on all state mutations | `app.py` (`/logout`, `/admin/*`, `/api/checklist`, `/topic/*`, `/quiz/*`) |
 | **Checklist Key Injection** | Whitelist validation confirms `item_id` exists in `curriculum.yaml` before writing | `curriculum.py:is_valid_checklist_item` |

@@ -38,6 +38,27 @@
     {% endwith %}
 
     {% block body %}{% endblock %}
+
+    {% if session.get('session_token') %}
+    <script>
+        // Keep-alive heartbeat: Automatically refreshes the session in the background
+        // every 3 minutes while the student has the page open watching a video or reading code.
+        (function() {
+            const HEARTBEAT_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
+            setInterval(() => {
+                if (!document.hidden) {
+                    fetch("/api/heartbeat", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-Token": "{{ csrf_token() }}",
+                        },
+                    }).catch(() => {});
+                }
+            }, HEARTBEAT_INTERVAL_MS);
+        })();
+    </script>
+    {% endif %}
 </body>
 </html>
 

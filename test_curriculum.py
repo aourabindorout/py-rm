@@ -125,6 +125,21 @@ class CurriculumTestCase(unittest.TestCase):
         prog = get_user_progress(self.TEST_USER)
         self.assertTrue(prog["checklist"].get("setup_watch_video"))
 
+    def test_heartbeat_api(self):
+        # 1. Unauthenticated -> 401
+        unauth_res = self.client.post("/api/heartbeat")
+        self.assertEqual(unauth_res.status_code, 401)
+
+        # 2. Authenticated but missing CSRF -> 403
+        csrf = self._login_and_get_csrf()
+        no_csrf_res = self.client.post("/api/heartbeat")
+        self.assertEqual(no_csrf_res.status_code, 403)
+
+        # 3. Authenticated with valid CSRF header -> 200 OK
+        ok_res = self.client.post("/api/heartbeat", headers={"X-CSRF-Token": csrf})
+        self.assertEqual(ok_res.status_code, 200)
+        self.assertTrue(ok_res.get_json()["ok"])
+
     def test_topic_completion_toggle(self):
         csrf = self._login_and_get_csrf()
 

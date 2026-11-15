@@ -216,6 +216,15 @@ def toggle_checklist():
     return jsonify({"ok": True, "item_id": item_id, "completed": completed})
 
 
+@app.route("/api/heartbeat", methods=["POST"])
+def heartbeat():
+    payload = request.get_json(silent=True) or {}
+    csrf_header = request.headers.get("X-CSRF-Token")
+    submitted_csrf = csrf_header if csrf_header is not None else payload.get("csrf_token", "")
+    _verify_csrf_or_abort(submitted_csrf)
+    return jsonify({"ok": True})
+
+
 @app.route("/quiz/<quiz_id>", methods=["GET", "POST"])
 def quiz_view(quiz_id: str):
     topic, quiz = get_quiz(quiz_id)

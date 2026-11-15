@@ -8,8 +8,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 logger = logging.getLogger(__name__)
 
-# Session inactivity timeout (10 minutes)
-INACTIVITY_TIMEOUT_SECONDS = int(os.environ.get("SESSION_INACTIVITY_TIMEOUT_SECONDS", 600))
+# Session inactivity timeout (30 minutes)
+# Ample time for 15-35 minute lesson videos, backed by a 3-minute client-side heartbeat
+INACTIVITY_TIMEOUT_SECONDS = int(os.environ.get("SESSION_INACTIVITY_TIMEOUT_SECONDS", 1800))
 
 # Throttling interval for session last_active_at updates (60 seconds)
 # Prevents redundant Firestore writes on every single HTTP request
