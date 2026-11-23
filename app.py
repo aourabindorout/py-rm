@@ -225,6 +225,14 @@ def heartbeat():
     return jsonify({"ok": True})
 
 
+@app.route("/playground")
+def playground_view():
+    return render_template(
+        "playground.html",
+        current_user=g.current_user,
+    )
+
+
 @app.route("/quiz/<quiz_id>", methods=["GET", "POST"])
 def quiz_view(quiz_id: str):
     topic, quiz = get_quiz(quiz_id)

@@ -30,6 +30,7 @@ To protect the platform and ensure a focused environment, there is **zero public
 | **Hosting & Compute** | **Google Cloud Run** | Fully managed serverless container runtime deployed in `asia-south1 (Mumbai)`. Configured with `max-instances=1` to guarantee cost control. |
 | **WSGI Server** | **Gunicorn** | Production-grade WSGI server running with 1 worker and 8 threads for low memory usage and high concurrency. |
 | **Containerization** | **Docker** | Uses `python:3.12-slim` for tiny container footprint, predictable builds, and fast Cloud Build deployments. |
+| **Client-Side Code Execution** | **Pyodide (WebAssembly)** | Executes Python 3.12 100% inside the student's browser with zero backend CPU usage, zero Cloud Run cost, and complete client-side security sandboxing. |
 
 ---
 
@@ -194,6 +195,21 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
 
 ---
 
+### Phase 10: In-Browser Interactive Python Code Runner (Pyodide WebAssembly)
+1. **Zero Cloud Cost & Complete Isolation**:
+   - Instead of running student code on the server (which would consume container CPU, require complex backend sandboxes, and risk timeout or billing spikes), code execution is offloaded **100% to the student's browser** using **Pyodide** (`v0.26.4`), a WebAssembly port of CPython.
+   - Cloud Run container CPU usage: **0%**. Monthly cost: **\$0.00**.
+2. **Integrated Lesson Code Runner (`templates/topic.html`)**:
+   - Converted static code snippets into an interactive playground pre-filled with the module's code.
+   - Features 4-space Tab key indentation, `Ctrl + Enter` (or `Cmd + Enter`) execution, and a "↺ Reset" button to restore the original example.
+   - Real-time virtual console captures `print()` outputs, displays runtime execution duration, and cleanly highlights errors (`SyntaxError`, `IndexError`, etc.).
+   - Full `input()` support via browser prompts, allowing him to practice interactive CLI programs.
+3. **Dedicated Python Playground (`/playground` & `templates/playground.html`)**:
+   - Added a full-page scratchpad accessible directly from the navigation bar (`▶ Playground`).
+   - Includes quick-start templates (Hello World, Loops & Math, Lists & Tuples, and a Mini Guessing Game) and a quick reference cheatsheet.
+
+---
+
 ## 🗄️ Database Schemas
 
 ### Firestore Document Structure (Production)
@@ -340,7 +356,7 @@ python -m unittest test_auth.py test_curriculum.py -v
 ---
 
 ## 🗺️ Future Enhancements
-With the core curriculum, video lessons, interactive checklists, quizzes, and Firestore tracking live, future additions could include:
+With the core curriculum, video lessons, interactive checklists, quizzes, in-browser WebAssembly Python runner, and Firestore tracking live, future additions could include:
 1. **Intermediate Track**: File I/O, Error Handling (`try`/`except`), Modules & APIs, and Object-Oriented Programming.
 2. **Mini-Project Gallery**: Dedicated guided builds (Rock-Paper-Scissors, Text Adventure, Discord/Telegram bot basics).
-3. **In-Browser Python Runner**: Optional Pyodide (WebAssembly) code runner inside lesson pages so he can test code directly without leaving the site.
+3. **Badges & Gamification**: Unlockable milestone badges (First Code Run, Quiz Ace, Streak Counter) on student dashboard.

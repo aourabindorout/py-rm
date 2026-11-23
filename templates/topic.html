@@ -105,31 +105,108 @@
                 </div>
             </section>
 
-            <!-- Code Example -->
+            <!-- Interactive Code Runner / Playground -->
             {% if topic.code_example %}
-            <section class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                <div class="px-5 py-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/60">
+            <section class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl space-y-0">
+                <!-- Runner Header -->
+                <div class="px-5 py-3 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 bg-slate-950/70">
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-mono text-emerald-400 font-semibold">{{ topic.code_example.title }}</span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Browser WASM
+                        </span>
                     </div>
-                    <button 
-                        type="button"
-                        id="copy-code-btn"
-                        onclick="copyCodeSnippet()"
-                        class="text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
-                    >
-                        Copy Code
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button 
+                            type="button" 
+                            id="reset-code-btn" 
+                            onclick="resetLessonCode()" 
+                            class="text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                            title="Reset to original lesson snippet"
+                        >
+                            ↺ Reset
+                        </button>
+                        <button 
+                            type="button"
+                            id="copy-code-btn"
+                            onclick="copyLessonCode()"
+                            class="text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                        >
+                            Copy
+                        </button>
+                    </div>
                 </div>
-                <pre class="p-5 overflow-x-auto text-xs sm:text-sm font-mono text-slate-200 leading-relaxed bg-slate-950/80"><code id="lesson-code">{{ topic.code_example.code }}</code></pre>
+
+                <!-- Code Editor -->
+                <div class="p-4 bg-slate-950/80">
+                    <textarea 
+                        id="lesson-code-editor" 
+                        rows="10" 
+                        spellcheck="false" 
+                        autocapitalize="off" 
+                        autocomplete="off"
+                        class="w-full bg-slate-950 border border-slate-800/80 rounded-xl p-4 font-mono text-xs sm:text-sm text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/40 resize-y leading-relaxed"
+                    >{{ topic.code_example.code }}</textarea>
+                </div>
+
+                <!-- Runner Action Bar -->
+                <div class="px-5 py-3 border-t border-slate-800/80 bg-slate-950/70 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <button 
+                            type="button" 
+                            id="run-lesson-btn" 
+                            onclick="runLessonCode()" 
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/25 transition-all cursor-pointer active:scale-95"
+                        >
+                            <span>▶</span>
+                            <span id="run-lesson-btn-label">Run Code</span>
+                        </button>
+                        <span class="text-[11px] text-slate-400 font-mono hidden sm:inline">
+                            <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">Ctrl</kbd> + <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">Enter</kbd>
+                        </span>
+                    </div>
+
+                    <div id="lesson-runner-status" class="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Ready in browser</span>
+                    </div>
+                </div>
+
+                <!-- Terminal Output Window -->
+                <div class="border-t border-slate-800/80 bg-slate-950/90">
+                    <div class="px-5 py-2.5 border-b border-slate-800/60 bg-slate-950 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block"></span>
+                            </div>
+                            <span class="font-mono text-slate-400 ml-1">Terminal Output</span>
+                        </div>
+                        <button 
+                            type="button" 
+                            onclick="clearLessonTerminal()" 
+                            class="text-[11px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    <div 
+                        id="lesson-terminal-output" 
+                        class="p-4 font-mono text-xs text-slate-200 min-h-[90px] max-h-[220px] overflow-y-auto whitespace-pre-wrap leading-relaxed select-text"
+                    ><span class="text-slate-500 italic">Click "Run Code" to execute this snippet directly in your browser.</span></div>
+                </div>
             </section>
             {% endif %}
 
             <!-- Hands-On Mini-Challenge -->
             <section class="rounded-2xl border border-amber-500/30 bg-amber-950/15 p-6 space-y-2">
-                <h2 class="text-base font-bold text-amber-300 flex items-center gap-2">
-                    <span>⚡</span> Try It Yourself Challenge
-                </h2>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-base font-bold text-amber-300 flex items-center gap-2">
+                        <span>⚡</span> Try It Yourself Challenge
+                    </h2>
+                    <span class="text-[11px] text-amber-400/80 font-mono hidden sm:inline">Test your answer in the code runner above!</span>
+                </div>
                 <p class="text-sm text-slate-200 leading-relaxed">
                     {{ topic.challenge }}
                 </p>
@@ -266,20 +343,174 @@
     </div>
 </main>
 
+<!-- Pyodide Official CDN -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+
 <script>
     const CSRF_TOKEN = "{{ csrf_token() }}";
     const TOTAL_ITEMS = {{ checklist_total }};
+    const ORIGINAL_LESSON_CODE = {{ (topic.code_example.code if topic.code_example else "")|tojson }};
 
-    function copyCodeSnippet() {
-        const codeEl = document.getElementById("lesson-code");
+    // -------------------------------------------------------------
+    // In-Browser Code Runner (Pyodide WebAssembly)
+    // -------------------------------------------------------------
+    let lessonPyodide = null;
+    let isLessonPyodideLoading = false;
+
+    function resetLessonCode() {
+        const editor = document.getElementById("lesson-code-editor");
+        if (editor) {
+            editor.value = ORIGINAL_LESSON_CODE;
+            clearLessonTerminal();
+            appendLessonTerminalLine("Reset code back to original example.", "info");
+        }
+    }
+
+    function copyLessonCode() {
+        const editor = document.getElementById("lesson-code-editor");
         const btn = document.getElementById("copy-code-btn");
-        if (!codeEl || !navigator.clipboard) return;
-        navigator.clipboard.writeText(codeEl.textContent).then(() => {
+        if (!editor || !navigator.clipboard) return;
+        navigator.clipboard.writeText(editor.value).then(() => {
             btn.textContent = "Copied ✓";
-            setTimeout(() => { btn.textContent = "Copy Code"; }, 1800);
+            setTimeout(() => { btn.textContent = "Copy"; }, 1800);
         });
     }
 
+    function clearLessonTerminal() {
+        const out = document.getElementById("lesson-terminal-output");
+        if (out) out.innerHTML = "";
+    }
+
+    function appendLessonTerminalLine(text, type = "stdout") {
+        const out = document.getElementById("lesson-terminal-output");
+        if (!out) return;
+
+        const span = document.createElement("span");
+        if (type === "stderr" || type === "error") {
+            span.className = "text-rose-400 font-mono block";
+        } else if (type === "stdin") {
+            span.className = "text-amber-300 font-mono block font-semibold";
+        } else if (type === "info") {
+            span.className = "text-cyan-400 font-mono block text-xs";
+        } else {
+            span.className = "text-emerald-300 font-mono block";
+        }
+        span.textContent = text;
+        out.appendChild(span);
+        out.scrollTop = out.scrollHeight;
+    }
+
+    async function initLessonPyodide() {
+        if (lessonPyodide) return lessonPyodide;
+        if (isLessonPyodideLoading) {
+            while (isLessonPyodideLoading) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return lessonPyodide;
+        }
+
+        isLessonPyodideLoading = true;
+        const statusEl = document.getElementById("lesson-runner-status");
+        if (statusEl) {
+            statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span><span>Loading Python (WASM)...</span>`;
+        }
+
+        try {
+            lessonPyodide = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/",
+                stdin: () => {
+                    const promptVal = window.prompt("Python input():");
+                    const response = promptVal !== null ? promptVal : "";
+                    appendLessonTerminalLine(`> ${response}`, "stdin");
+                    return response;
+                }
+            });
+            return lessonPyodide;
+        } finally {
+            isLessonPyodideLoading = false;
+        }
+    }
+
+    async function runLessonCode() {
+        const editor = document.getElementById("lesson-code-editor");
+        const runBtn = document.getElementById("run-lesson-btn");
+        const runBtnLabel = document.getElementById("run-lesson-btn-label");
+        const statusEl = document.getElementById("lesson-runner-status");
+        if (!editor) return;
+
+        const code = editor.value;
+        clearLessonTerminal();
+
+        runBtn.disabled = true;
+        runBtn.classList.add("opacity-75", "cursor-wait");
+        runBtnLabel.textContent = "Running...";
+
+        try {
+            const py = await initLessonPyodide();
+
+            let hasOutput = false;
+            py.setStdout({
+                batched: (text) => {
+                    hasOutput = true;
+                    appendLessonTerminalLine(text, "stdout");
+                }
+            });
+            py.setStderr({
+                batched: (text) => {
+                    hasOutput = true;
+                    appendLessonTerminalLine(text, "stderr");
+                }
+            });
+
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span><span>Executing...</span>`;
+            }
+
+            const startTime = performance.now();
+            await py.runPythonAsync(code);
+            const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+
+            if (!hasOutput) {
+                appendLessonTerminalLine("[Program finished with no output]", "info");
+            }
+            appendLessonTerminalLine(`\n✓ Execution finished in ${duration}s`, "info");
+
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Finished (${duration}s)</span>`;
+            }
+        } catch (err) {
+            appendLessonTerminalLine(err.message || String(err), "error");
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Error</span>`;
+            }
+        } finally {
+            runBtn.disabled = false;
+            runBtn.classList.remove("opacity-75", "cursor-wait");
+            runBtnLabel.textContent = "Run Code";
+        }
+    }
+
+    // Editor 4-space Tab key and Ctrl+Enter shortcut
+    const lessonEditorEl = document.getElementById("lesson-code-editor");
+    if (lessonEditorEl) {
+        lessonEditorEl.addEventListener("keydown", function(e) {
+            if (e.key === "Tab") {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                e.preventDefault();
+                runLessonCode();
+            }
+        });
+    }
+
+    // -------------------------------------------------------------
+    // Interactive Checklist Handling
+    // -------------------------------------------------------------
     function updateChecklistStyles(checkbox) {
         const label = checkbox.closest("label");
         const textSpan = label.querySelector("span");

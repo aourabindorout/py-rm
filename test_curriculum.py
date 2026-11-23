@@ -238,6 +238,28 @@ class CurriculumTestCase(unittest.TestCase):
         self.assertIn(b"0%", home_res.data)
         self.assertNotIn(b"Quiz: 4/4", home_res.data)
 
+    def test_unauthenticated_blocked_from_playground(self):
+        res = self.client.get("/playground")
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/login", res.headers["Location"])
+
+    def test_authenticated_playground_view(self):
+        self._login_and_get_csrf()
+        res = self.client.get("/playground")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"Python Playground", res.data)
+        self.assertIn(b"pyodide", res.data)
+        self.assertIn(b"code-editor", res.data)
+        self.assertIn(b"terminal-output", res.data)
+
+    def test_topic_detail_includes_code_runner(self):
+        self._login_and_get_csrf()
+        res = self.client.get("/topic/setup-hello")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"lesson-code-editor", res.data)
+        self.assertIn(b"lesson-terminal-output", res.data)
+        self.assertIn(b"pyodide", res.data)
+
 
 if __name__ == "__main__":
     unittest.main()
