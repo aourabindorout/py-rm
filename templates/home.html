@@ -99,128 +99,146 @@
         </div>
     </section>
 
-    <!-- Roadmap Modules Grid -->
-    <section class="space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-                <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <span>🗺️</span> Your Python Learning Path
-                </h2>
-                <p class="text-xs sm:text-sm text-slate-400">
-                    All modules are unlocked—go in order or jump to any topic you want to practice!
-                </p>
-            </div>
-        </div>
+    <!-- Roadmap Tracks Section -->
+    <div class="space-y-10">
+        {% for track in summary.tracks %}
+        <section class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div class="flex items-start sm:items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-xl shrink-0">
+                        {{ track.icon }}
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight">
+                                {{ track.title }}
+                            </h2>
+                            <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full {% if track.id == 'foundations' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-cyan-500/10 text-cyan-400 border border-cyan-500/20{% endif %}">
+                                {{ track.tag }}
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
+                            {{ track.description }}
+                        </p>
+                    </div>
+                </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {% for card in summary.topic_cards %}
-            {% set t = card.topic %}
-            <div class="group rounded-2xl border p-6 transition-all flex flex-col justify-between {% if card.is_completed %}bg-emerald-950/15 border-emerald-500/30 hover:border-emerald-500/50{% else %}bg-slate-900/60 border-slate-800 hover:border-slate-700{% endif %}">
-                <div>
-                    <!-- Card Top Row -->
-                    <div class="flex items-start justify-between gap-3 mb-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0 {% if card.is_completed %}bg-emerald-500/15 border border-emerald-500/30{% else %}bg-slate-800/80 border border-slate-700/70{% endif %}">
-                                {{ t.icon }}
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-400">
-                                        Module {{ t.order }}
-                                    </span>
-                                    <span class="text-slate-600">•</span>
-                                    <span class="font-mono text-[11px] text-slate-400">{{ t.duration }}</span>
+                <div class="flex items-center gap-2 text-xs font-mono text-slate-400 shrink-0 self-start sm:self-auto">
+                    <span>Track Progress:</span>
+                    <span class="font-bold text-emerald-400">{{ track.completed_count }}/{{ track.total_count }} Done</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for card in track.cards %}
+                {% set t = card.topic %}
+                <div class="group rounded-2xl border p-6 transition-all flex flex-col justify-between {% if card.is_completed %}bg-emerald-950/15 border-emerald-500/30 hover:border-emerald-500/50{% else %}bg-slate-900/60 border-slate-800 hover:border-slate-700{% endif %}">
+                    <div>
+                        <!-- Card Top Row -->
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0 {% if card.is_completed %}bg-emerald-500/15 border border-emerald-500/30{% else %}bg-slate-800/80 border border-slate-700/70{% endif %}">
+                                    {{ t.icon }}
                                 </div>
-                                <h3 class="text-base sm:text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
-                                    <a href="/topic/{{ t.id }}">{{ t.title }}</a>
-                                </h3>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+                                            Module {{ t.order }}
+                                        </span>
+                                        <span class="text-slate-600">•</span>
+                                        <span class="font-mono text-[11px] text-slate-400">{{ t.duration }}</span>
+                                    </div>
+                                    <h3 class="text-base sm:text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
+                                        <a href="/topic/{{ t.id }}">{{ t.title }}</a>
+                                    </h3>
+                                </div>
                             </div>
+
+                            {% if card.is_completed %}
+                            <span class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                <span>✓</span> Done
+                            </span>
+                            {% elif card.checklist_done > 0 %}
+                            <span class="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                                In Progress
+                            </span>
+                            {% endif %}
                         </div>
 
-                        {% if card.is_completed %}
-                        <span class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                            <span>✓</span> Done
-                        </span>
-                        {% elif card.checklist_done > 0 %}
-                        <span class="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                            In Progress
-                        </span>
-                        {% endif %}
+                        <!-- Summary -->
+                        <p class="text-sm text-slate-400 leading-relaxed mb-5">
+                            {{ t.summary }}
+                        </p>
                     </div>
 
-                    <!-- Summary -->
-                    <p class="text-sm text-slate-400 leading-relaxed mb-5">
-                        {{ t.summary }}
-                    </p>
-                </div>
+                    <!-- Card Footer: Progress & Actions -->
+                    <div class="pt-4 border-t border-slate-800/80 space-y-4">
+                        <div class="flex items-center justify-between text-xs font-mono">
+                            <span class="text-slate-400">
+                                Checklist:
+                                <strong class="{% if card.checklist_done == card.checklist_total and card.checklist_total > 0 %}text-emerald-400{% else %}text-cyan-400{% endif %}">
+                                    {{ card.checklist_done }}/{{ card.checklist_total }}
+                                </strong>
+                            </span>
 
-                <!-- Card Footer: Progress & Actions -->
-                <div class="pt-4 border-t border-slate-800/80 space-y-4">
-                    <div class="flex items-center justify-between text-xs font-mono">
-                        <span class="text-slate-400">
-                            Checklist:
-                            <strong class="{% if card.checklist_done == card.checklist_total and card.checklist_total > 0 %}text-emerald-400{% else %}text-cyan-400{% endif %}">
-                                {{ card.checklist_done }}/{{ card.checklist_total }}
-                            </strong>
-                        </span>
-
-                        {% if t.quiz %}
-                            {% if card.quiz_result %}
-                                {% if card.quiz_result.passed %}
-                                <span class="text-emerald-400 font-semibold">
-                                    🏅 Quiz: {{ card.quiz_result.score }}/{{ card.quiz_result.total }}
-                                </span>
+                            {% if t.quiz %}
+                                {% if card.quiz_result %}
+                                    {% if card.quiz_result.passed %}
+                                    <span class="text-emerald-400 font-semibold">
+                                        🏅 Quiz: {{ card.quiz_result.score }}/{{ card.quiz_result.total }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-amber-400 font-semibold">
+                                        📝 Quiz: {{ card.quiz_result.score }}/{{ card.quiz_result.total }} (Retry)
+                                    </span>
+                                    {% endif %}
                                 {% else %}
-                                <span class="text-amber-400 font-semibold">
-                                    📝 Quiz: {{ card.quiz_result.score }}/{{ card.quiz_result.total }} (Retry)
-                                </span>
+                                <span class="text-slate-500">Quiz: Not taken</span>
                                 {% endif %}
-                            {% else %}
-                            <span class="text-slate-500">Quiz: Not taken</span>
                             {% endif %}
-                        {% endif %}
-                    </div>
+                        </div>
 
-                    <div class="flex items-center gap-2.5">
-                        <a 
-                            href="/topic/{{ t.id }}" 
-                            class="flex-1 text-center py-2.5 px-4 rounded-xl text-xs font-semibold transition-all {% if card.is_completed %}bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700{% else %}bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30{% endif %}"
-                        >
-                            {% if card.is_completed %}Review Lesson{% else %}Open Lesson →{% endif %}
-                        </a>
-                        {% if t.quiz %}
-                        <a 
-                            href="/quiz/{{ t.quiz.id }}" 
-                            class="py-2.5 px-4 rounded-xl text-xs font-semibold border border-slate-700 hover:border-amber-500/40 bg-slate-950/60 hover:bg-amber-500/10 text-slate-300 hover:text-amber-300 transition-all"
-                        >
-                            Quiz
-                        </a>
-                        {% endif %}
+                        <div class="flex items-center gap-2.5">
+                            <a 
+                                href="/topic/{{ t.id }}" 
+                                class="flex-1 text-center py-2.5 px-4 rounded-xl text-xs font-semibold transition-all {% if card.is_completed %}bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700{% else %}bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30{% endif %}"
+                            >
+                                {% if card.is_completed %}Review Lesson{% else %}Open Lesson →{% endif %}
+                            </a>
+                            {% if t.quiz %}
+                            <a 
+                                href="/quiz/{{ t.quiz.id }}" 
+                                class="py-2.5 px-4 rounded-xl text-xs font-semibold border border-slate-700 hover:border-amber-500/40 bg-slate-950/60 hover:bg-amber-500/10 text-slate-300 hover:text-amber-300 transition-all"
+                            >
+                                Quiz
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
-    </section>
+        </section>
+        {% endfor %}
+    </div>
 
-    <!-- Helpful Coding Tip -->
+    <!-- Built-in Playground CTA Box -->
     <section class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-start sm:items-center gap-3">
-            <span class="text-2xl">💻</span>
+            <span class="text-3xl">💻</span>
             <div>
-                <h3 class="text-sm font-bold text-white">Where should you type and test your Python code?</h3>
+                <h3 class="text-sm font-bold text-white">Want to write and test your own Python ideas?</h3>
                 <p class="text-xs text-slate-400 mt-0.5">
-                    Use <strong class="text-slate-200">VS Code / IDLE</strong> on your computer, or practice in your browser with any online Python compiler!
+                    Use our built-in in-browser <strong class="text-emerald-400">Python Playground</strong> powered by WebAssembly, or test directly inside any lesson!
                 </p>
             </div>
         </div>
         <a 
-            href="https://www.programiz.com/python-programming/online-compiler/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            class="shrink-0 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-200 hover:text-white transition-all text-center"
+            href="/playground" 
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all shrink-0"
         >
-            Open Online Python Editor ↗
+            <span>▶</span>
+            <span>Open Playground</span>
         </a>
     </section>
 </main>

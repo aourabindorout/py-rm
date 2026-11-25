@@ -210,6 +210,24 @@ To prevent automated credential stuffing, bot scraping, and billing spikes from 
 
 ---
 
+### Phase 11: Track 2 — Intermediate Python Curriculum & Track Architecture (Modules 9–14)
+1. **Multi-Track Curriculum System**:
+   - Structured curriculum into distinct, motivating learning tracks:
+     - **Track 1: Python Foundations (Modules 1–8)**: Syntax, variables, strings, math, lists, dictionaries, conditionals, loops, and reusable functions.
+     - **Track 2: Intermediate & Real-World Python (Modules 9–14)**: Persistent file storage, bug catching, standard libraries, object-oriented programming, modern comprehensions, and game architecture.
+2. **6 New Intermediate Modules Added (`curriculum.yaml`)**:
+   - **Module 9 (`files-io`)**: Reading & writing text files using `with open()` context managers, file modes (`r`, `w`, `a`), and a persistent high-score challenge.
+   - **Module 10 (`errors-exceptions`)**: Bug hunting with `try`, `except ValueError`, `ZeroDivisionError`, and `finally` cleanup.
+   - **Module 11 (`standard-library`)**: Leveraging built-in superpowers with `random` (choice, shuffle), `math` (sqrt, ceil, pi), and `datetime`.
+   - **Module 12 (`oop-classes`)**: Object-Oriented Programming, custom blueprints (`class`), constructors (`__init__`), instance variables (`self`), and methods.
+   - **Module 13 (`comprehensions`)**: Modern Python list comprehensions, conditional filtering, and concise data transformations.
+   - **Module 14 (`capstone-rpg`)**: Track 2 Capstone project combining classes, game loops, combat math, random loot, and file saving into a playable text dungeon adventure.
+3. **Roadmap Track UI & Progress Grouping (`templates/home.html` & `curriculum.py`)**:
+   - Redesigned `/` roadmap view with separate track sections, progress counters, and track tags (`Beginner Core` and `Level Up`).
+   - Built-in playground CTA integrated seamlessly into the roadmap footer.
+
+---
+
 ## 🗄️ Database Schemas
 
 ### Firestore Document Structure (Production)
@@ -356,7 +374,7 @@ python -m unittest test_auth.py test_curriculum.py -v
 ---
 
 ## 🗺️ Future Enhancements
-With the core curriculum, video lessons, interactive checklists, quizzes, in-browser WebAssembly Python runner, and Firestore tracking live, future additions could include:
-1. **Intermediate Track**: File I/O, Error Handling (`try`/`except`), Modules & APIs, and Object-Oriented Programming.
-2. **Mini-Project Gallery**: Dedicated guided builds (Rock-Paper-Scissors, Text Adventure, Discord/Telegram bot basics).
-3. **Badges & Gamification**: Unlockable milestone badges (First Code Run, Quiz Ace, Streak Counter) on student dashboard.
+With both Track 1 (Foundations) and Track 2 (Intermediate) live across 14 interactive modules with WebAssembly code runner and Firestore persistence, future additions could include:
+1. **Mini-Project Gallery**: Dedicated standalone guided builds (Rock-Paper-Scissors, Caesar Cipher Agent, Discord bot basics).
+2. **Badges & Gamification**: Unlockable milestone badges (First Code Run, Quiz Ace, Track 1 Complete, Track 2 Master) on student dashboard.
+3. **Brother Mentorship Notes**: Admin dashboard feature to leave encouraging milestone notes on the student's home view.

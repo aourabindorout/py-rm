@@ -159,6 +159,33 @@ def compute_progress_summary(progress: Dict[str, Any]) -> Dict[str, Any]:
             }
         )
 
+    # Group cards by track
+    foundations_cards = [c for c in topic_cards if c["topic"].get("track") == "foundations" or c["topic"].get("order", 0) <= 8]
+    intermediate_cards = [c for c in topic_cards if c["topic"].get("track") == "intermediate" or c["topic"].get("order", 0) > 8]
+
+    tracks = [
+        {
+            "id": "foundations",
+            "title": "Track 1: Python Foundations",
+            "tag": "Beginner Core",
+            "description": "Essential syntax, variables, lists, dictionaries, conditionals, loops, and functions.",
+            "icon": "🚀",
+            "cards": foundations_cards,
+            "completed_count": sum(1 for c in foundations_cards if c["is_completed"]),
+            "total_count": len(foundations_cards),
+        },
+        {
+            "id": "intermediate",
+            "title": "Track 2: Intermediate & Real-World Python",
+            "tag": "Level Up",
+            "description": "Files, error handling, standard libraries, classes/OOP, comprehensions, and the RPG Capstone.",
+            "icon": "⚡",
+            "cards": intermediate_cards,
+            "completed_count": sum(1 for c in intermediate_cards if c["is_completed"]),
+            "total_count": len(intermediate_cards),
+        },
+    ]
+
     # Calculate overall completion percentage (weighted across topics, tasks, and quizzes)
     total_units = total_topics + total_checklist + total_quizzes
     done_units = completed_topics_count + completed_checklist + passed_quizzes
@@ -174,4 +201,5 @@ def compute_progress_summary(progress: Dict[str, Any]) -> Dict[str, Any]:
         "overall_percent": overall_percent,
         "next_topic": next_topic,
         "topic_cards": topic_cards,
+        "tracks": tracks,
     }

@@ -5,6 +5,7 @@ pass_threshold_percent: 75
 topics:
   - id: "setup-hello"
     order: 1
+    track: "foundations"
     icon: "🚀"
     title: "Setup & Your First Python Program"
     duration: "15 min"
@@ -80,6 +81,7 @@ topics:
 
   - id: "strings-variables"
     order: 2
+    track: "foundations"
     icon: "🏷️"
     title: "Variables & Strings (Working with Text)"
     duration: "25 min"
@@ -159,6 +161,7 @@ topics:
 
   - id: "numbers-math"
     order: 3
+    track: "foundations"
     icon: "🔢"
     title: "Numbers, Math & User Input"
     duration: "25 min"
@@ -237,6 +240,7 @@ topics:
 
   - id: "lists-tuples"
     order: 4
+    track: "foundations"
     icon: "🎒"
     title: "Lists, Tuples & Sets (Your Inventory)"
     duration: "30 min"
@@ -314,6 +318,7 @@ topics:
 
   - id: "dictionaries"
     order: 5
+    track: "foundations"
     icon: "🗂️"
     title: "Dictionaries (Key-Value Superpowers)"
     duration: "25 min"
@@ -395,6 +400,7 @@ topics:
 
   - id: "conditionals"
     order: 6
+    track: "foundations"
     icon: "🔀"
     title: "Making Decisions (if, elif, else)"
     duration: "25 min"
@@ -473,6 +479,7 @@ topics:
 
   - id: "loops"
     order: 7
+    track: "foundations"
     icon: "🔁"
     title: "Loops & Automation (for & while)"
     duration: "25 min"
@@ -551,6 +558,7 @@ topics:
 
   - id: "functions-project"
     order: 8
+    track: "foundations"
     icon: "🎮"
     title: "Functions & Build a Mini-Game"
     duration: "35 min"
@@ -598,7 +606,7 @@ topics:
         label: "Upgrade the game with a 5-try limit!"
     quiz:
       id: "quiz-functions-project"
-      title: "Final Checkpoint: Functions & Games"
+      title: "Module 8 Checkpoint: Functions & Games"
       questions:
         - id: "q1"
           prompt: "Which keyword defines a new function in Python?"
@@ -636,3 +644,609 @@ topics:
             - "To make variables global"
           answer_index: 1
           explanation: "Functions keep code modular, readable, and reusable so you don't repeat yourself."
+
+  - id: "files-io"
+    order: 9
+    track: "intermediate"
+    icon: "📁"
+    title: "Reading & Writing Files"
+    duration: "25 min"
+    summary: "Learn how to save data permanently by opening, reading, and writing text files using Python's with open() statement."
+    video:
+      id: "EgyQWVptmYI"
+      title: "Python Tutorial: File Objects - Reading and Writing to Files"
+      author: "Corey Schafer"
+      bonus_id: "bfeI46sW2e8"
+      bonus_title: "Bonus: Python Working With Files in 10 Minutes"
+    concepts:
+      - heading: "The with open() Context Manager"
+        body: "Always use 'with open(filename, mode) as f:' in Python. The with block automatically closes the file when you are done, preventing data corruption or memory leaks."
+      - heading: "File Modes: 'r', 'w', and 'a'"
+        body: "'r' opens a file for reading. 'w' opens a file for writing (and overwrites anything already in it!). 'a' stands for append, adding new lines at the end without erasing old data."
+    code_example:
+      title: "save_high_score.py"
+      code: |
+        # Writing and reading files in Python
+
+        # 1. Save data to a file ('w' = write, 'a' = append)
+        player_name = "Alex"
+        score = 1500
+
+        with open("scores.txt", "w") as file:
+            file.write(f"{player_name}: {score}\n")
+            file.write("Sam: 1200\n")
+
+        print("Saved scores to scores.txt!")
+
+        # 2. Read the file back
+        print("\n--- Current High Scores ---")
+        with open("scores.txt", "r") as file:
+            for line in file:
+                print(line.strip())
+    challenge: "Write a mini-diary script! Ask the user for their favorite moment of the day using input(), append it to 'diary.txt' with a date or number, and read the entire diary back to the screen."
+    checklist:
+      - id: "files_watch_video"
+        label: "Watch the File Objects video"
+      - id: "files_open_read"
+        label: "Read text from a file using with open(..., 'r')"
+      - id: "files_write_overwrite"
+        label: "Write data to a new file using 'w' mode"
+      - id: "files_append_mode"
+        label: "Append extra lines to a file using 'a' mode"
+      - id: "files_complete_challenge"
+        label: "Complete the mini-diary file challenge"
+    quiz:
+      id: "quiz-files-io"
+      title: "Module 9 Checkpoint: File Handling"
+      questions:
+        - id: "q1"
+          prompt: "Why is 'with open(...) as f:' the recommended way to open files in Python?"
+          options:
+            - "It makes the file read faster"
+            - "It automatically closes the file when the block finishes, even if errors occur"
+            - "It encrypts the file on your hard drive"
+            - "It deletes the file when done"
+          answer_index: 1
+          explanation: "Context managers (with open) guarantee the file stream is cleanly closed and flushed to disk automatically."
+        - id: "q2"
+          prompt: "Which mode should you choose to add new lines to an existing file without deleting its old content?"
+          options:
+            - "'r'"
+            - "'w'"
+            - "'a'"
+            - "'x'"
+          answer_index: 2
+          explanation: "'a' stands for Append. It writes new data at the very end of the file, preserving all existing text."
+        - id: "q3"
+          prompt: "What will happen if you open an existing file with mode 'w'?"
+          options:
+            - "Python throws an error"
+            - "It overwrites and erases the previous contents of the file"
+            - "It appends to the end"
+            - "It makes the file read-only"
+          answer_index: 1
+          explanation: "Mode 'w' truncates (wipes out) the existing file and starts fresh. Be careful when using 'w'!"
+        - id: "q4"
+          prompt: "What does the .strip() string method do when reading lines from a file?"
+          options:
+            - "Reverses the line"
+            - "Removes leading and trailing whitespace including the newline character (\\n)"
+            - "Deletes vowels from the text"
+            - "Capitalizes every letter"
+          answer_index: 1
+          explanation: ".strip() removes trailing \\n and surrounding spaces so printing each line doesn't add accidental blank lines."
+
+  - id: "errors-exceptions"
+    order: 10
+    track: "intermediate"
+    icon: "🛡️"
+    title: "Catching Bugs & Error Handling"
+    duration: "20 min"
+    summary: "Prevent your programs from crashing when bad input or unexpected errors happen by handling exceptions with try, except, and finally."
+    video:
+      id: "NIWwJbo-9_8"
+      title: "Python Tutorial: Using Try/Except Blocks for Error Handling"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "What is an Exception?"
+        body: "When code hits a problem (like dividing by zero, or converting 'abc' to an integer), Python raises an exception. If unhandled, the program crashes with a red traceback."
+      - heading: "The Safety Net: try / except"
+        body: "Put risky code inside a 'try:' block. If an error occurs, Python jumps to the 'except:' block without crashing, letting you handle the error gracefully."
+    code_example:
+      title: "safe_input.py"
+      code: |
+        # Safely handling user input without crashing
+
+        def get_positive_number(prompt):
+            while True:
+                user_input = input(prompt)
+                try:
+                    num = float(user_input)
+                    if num <= 0:
+                        print("Please enter a number greater than 0!")
+                        continue
+                    return num
+                except ValueError:
+                    print(f"'{user_input}' is not a valid number! Try again.")
+
+        # Test safe division
+        print("Welcome to the Safe Divider!")
+        numerator = get_positive_number("Enter numerator: ")
+        denominator = get_positive_number("Enter denominator: ")
+
+        try:
+            result = numerator / denominator
+            print(f"Result: {numerator} / {denominator} = {result:.2f}")
+        except ZeroDivisionError:
+            print("Cannot divide by zero!")
+        finally:
+            print("Calculation complete.")
+    challenge: "Build a safe age calculator! Ask the user for their birth year, convert it to an integer inside a try/except block, calculate their age, and catch both ValueError and any unrealistic year (e.g. year > 2026 or year < 1900)."
+    checklist:
+      - id: "errors_watch_video"
+        label: "Watch the Try/Except Error Handling video"
+      - id: "errors_catch_value_error"
+        label: "Catch a ValueError when converting invalid text to int()"
+      - id: "errors_catch_zero_division"
+        label: "Catch a ZeroDivisionError during division"
+      - id: "errors_use_finally"
+        label: "Use a finally block to run code after try/except finishes"
+      - id: "errors_complete_challenge"
+        label: "Complete the safe age calculator challenge"
+    quiz:
+      id: "quiz-errors-exceptions"
+      title: "Module 10 Checkpoint: Error Handling"
+      questions:
+        - id: "q1"
+          prompt: "What happens if code inside a 'try' block triggers an error?"
+          options:
+            - "The whole operating system reboots"
+            - "Python immediately jumps to the matching 'except' block to handle it"
+            - "The program ignores the error and continues the next line in the try block"
+            - "Python deletes the variable"
+          answer_index: 1
+          explanation: "When an exception occurs inside try, Python stops executing the try block and immediately enters the matching except block."
+        - id: "q2"
+          prompt: "Which error occurs if you try to execute: int(\"banana\")?"
+          options:
+            - "ZeroDivisionError"
+            - "IndexError"
+            - "ValueError"
+            - "KeyError"
+          answer_index: 2
+          explanation: "Converting non-numeric text to an integer causes a ValueError because the string does not represent a valid number."
+        - id: "q3"
+          prompt: "When does the code inside a 'finally' block run?"
+          options:
+            - "Only if an error occurred"
+            - "Only if no error occurred"
+            - "Always, regardless of whether an error occurred or not"
+            - "Only on Sundays"
+          answer_index: 2
+          explanation: "The 'finally' block always runs, making it the perfect place for cleanup actions like closing files or connections."
+        - id: "q4"
+          prompt: "Why is it best practice to catch specific errors (like 'except ValueError:') rather than a bare 'except:'?"
+          options:
+            - "Bare except is slower"
+            - "Catching specific errors avoids accidentally hiding unexpected bugs or system exits"
+            - "Python does not allow bare except"
+            - "Specific errors make variables public"
+          answer_index: 1
+          explanation: "Catching specific exceptions ensures you only handle errors you anticipated, preventing you from silently swallowing other real bugs."
+
+  - id: "standard-library"
+    order: 11
+    track: "intermediate"
+    icon: "🧰"
+    title: "The Python Standard Library"
+    duration: "25 min"
+    summary: "Discover Python's built-in superpowers! Learn how to import modules to generate random choices, perform advanced math, and track real-world dates."
+    video:
+      id: "CqvZ3vGoGs0"
+      title: "Python Tutorial: Import Modules and Exploring The Standard Library"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "'Batteries Included'"
+        body: "Python comes pre-packaged with hundreds of powerful built-in modules called the Standard Library. You don't need to install anything; just type 'import module_name'."
+      - heading: "Useful Everyday Modules"
+        body: "Use 'random' for games (choice, randint, shuffle), 'math' for calculations (sqrt, ceil, pi), and 'datetime' for clocks, timers, and timestamps."
+    code_example:
+      title: "lucky_draw.py"
+      code: |
+        # Exploring Python's Standard Library
+        import random
+        import math
+        import datetime
+
+        # 1. Working with datetime
+        today = datetime.date.today()
+        now = datetime.datetime.now()
+        print(f"Current Date: {today}")
+        print(f"Current Time: {now.strftime('%H:%M:%S')}")
+
+        # 2. Math calculations
+        radius = 5
+        circle_area = math.pi * math.pow(radius, 2)
+        print(f"Area of circle with radius {radius}: {circle_area:.2f}")
+
+        # 3. Random module in action
+        contestants = ["Maya", "Leo", "Zoe", "Aiden", "Riley", "Lucas"]
+        random.shuffle(contestants)
+        winner = random.choice(contestants)
+        lucky_number = random.randint(100, 999)
+
+        print(f"\n🎉 WINNER: {winner} won with lucky ticket #{lucky_number}!")
+    challenge: "Build a 'Dice Duel' simulator! Write a program where two players each roll two 6-sided dice (using random.randint). Calculate each player's sum, declare the winner, and print the date of the match using datetime.date.today()."
+    checklist:
+      - id: "stdlib_watch_video"
+        label: "Watch the Standard Library & Imports video"
+      - id: "stdlib_use_random"
+        label: "Use random.choice() and random.randint() in a script"
+      - id: "stdlib_use_math"
+        label: "Use math.pi or math.sqrt() in a calculation"
+      - id: "stdlib_use_datetime"
+        label: "Display the current date using datetime.date.today()"
+      - id: "stdlib_complete_challenge"
+        label: "Complete the Dice Duel simulator challenge"
+    quiz:
+      id: "quiz-standard-library"
+      title: "Module 11 Checkpoint: Standard Library"
+      questions:
+        - id: "q1"
+          prompt: "What does the 'import' keyword do in Python?"
+          options:
+            - "Downloads an app from the internet"
+            - "Loads a module of functions and tools into your script"
+            - "Deletes old code"
+            - "Creates a new folder on your computer"
+          answer_index: 1
+          explanation: "import brings pre-written code modules (like math, random, or your own files) into your program so you can use their functions."
+        - id: "q2"
+          prompt: "Which function randomly picks one single item from a list?"
+          options:
+            - "random.pick(my_list)"
+            - "random.choice(my_list)"
+            - "random.sample(my_list)"
+            - "random.select(my_list)"
+          answer_index: 1
+          explanation: "random.choice(sequence) returns a single random element from a non-empty list or tuple."
+        - id: "q3"
+          prompt: "What is the result of math.ceil(4.2)?"
+          options:
+            - "4"
+            - "4.2"
+            - "5"
+            - "0"
+          answer_index: 2
+          explanation: "math.ceil() rounds a number UP to the nearest integer, so 4.2 rounds up to 5 (ceiling)."
+        - id: "q4"
+          prompt: "If you want to use the alias 'm' for math, how should you import it?"
+          options:
+            - "import math as m"
+            - "import math is m"
+            - "alias math = m"
+            - "use math with m"
+          answer_index: 0
+          explanation: "'import math as m' assigns the shorthand alias m, allowing you to type m.pi or m.sqrt()."
+
+  - id: "oop-classes"
+    order: 12
+    track: "intermediate"
+    icon: "🧙"
+    title: "Object-Oriented Programming: Classes & Objects"
+    duration: "30 min"
+    summary: "Level up your code architecture! Learn how to create custom blueprints (classes) with attributes and methods to model real-world heroes, items, and games."
+    video:
+      id: "ZDa-Z5JzLYM"
+      title: "Python OOP Tutorial 1: Classes and Instances"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "Blueprints & Objects"
+        body: "A class is a blueprint (like an architectural plan for a house). An object (or instance) is the actual house built from that blueprint. You can make 100 heroes from one Hero class!"
+      - heading: "The __init__ Constructor & self"
+        body: "When you create an object, Python calls the special __init__ method. 'self' refers to the specific instance being created, letting you attach attributes like self.name and self.health."
+    code_example:
+      title: "rpg_hero.py"
+      code: |
+        # Object-Oriented Programming in Python
+
+        class Hero:
+            def __init__(self, name, hero_class, health, attack_power):
+                self.name = name
+                self.hero_class = hero_class
+                self.health = health
+                self.attack_power = attack_power
+
+            def take_damage(self, amount):
+                self.health = max(0, self.health - amount)
+                print(f"💥 {self.name} took {amount} damage! Health remaining: {self.health}")
+
+            def attack(self, target):
+                print(f"⚔️ {self.name} strikes {target.name} for {self.attack_power} damage!")
+                target.take_damage(self.attack_power)
+
+            def is_alive(self):
+                return self.health > 0
+
+        # Create two hero instances
+        warrior = Hero("Ragnar", "Warrior", 100, 25)
+        wizard = Hero("Gandalf", "Wizard", 70, 35)
+
+        print(f"Created: {warrior.name} ({warrior.hero_class}) - HP: {warrior.health}")
+        print(f"Created: {wizard.name} ({wizard.hero_class}) - HP: {wizard.health}")
+
+        # Simulate a quick battle round
+        warrior.attack(wizard)
+        wizard.attack(warrior)
+    challenge: "Create a 'Pet' class! Give each pet a name, a species, and an energy level starting at 100. Add two methods: play(minutes) which decreases energy, and sleep(hours) which restores energy (up to a max of 100). Create 2 pets and test them!"
+    checklist:
+      - id: "oop_watch_video"
+        label: "Watch the OOP Classes and Instances video"
+      - id: "oop_define_class"
+        label: "Define a class with the class keyword"
+      - id: "oop_init_constructor"
+        label: "Write an __init__ constructor using self"
+      - id: "oop_custom_methods"
+        label: "Add custom methods that modify self attributes"
+      - id: "oop_complete_challenge"
+        label: "Complete the Pet class challenge"
+    quiz:
+      id: "quiz-oop-classes"
+      title: "Module 12 Checkpoint: Classes & Objects"
+      questions:
+        - id: "q1"
+          prompt: "What is the relationship between a class and an instance in Python?"
+          options:
+            - "They are identical and mean the exact same thing"
+            - "A class is the blueprint, while an instance is an actual object created from that blueprint"
+            - "An instance is a function, a class is a variable"
+            - "Classes only run on servers"
+          answer_index: 1
+          explanation: "Think of a class as a cookie cutter (the blueprint) and instances as the actual cookies baked from it."
+        - id: "q2"
+          prompt: "What does 'self' represent inside a class method?"
+          options:
+            - "The Python interpreter itself"
+            - "The specific instance of the object being operated on"
+            - "The name of the file"
+            - "A global variable accessible by all classes"
+          answer_index: 1
+          explanation: "self refers to the individual object instance (e.g., self.name accesses that specific hero's name)."
+        - id: "q3"
+          prompt: "Which special method is automatically called when a new object is created?"
+          options:
+            - "__start__()"
+            - "__init__()"
+            - "__new_object__()"
+            - "__create__()"
+          answer_index: 1
+          explanation: "__init__() (the constructor) initializes the new object's attributes as soon as you instantiate it."
+        - id: "q4"
+          prompt: "If player = Hero('Aiden'), how do you call the heal() method on player?"
+          options:
+            - "heal(player)"
+            - "Hero.player.heal()"
+            - "player.heal()"
+            - "call heal on player"
+          answer_index: 2
+          explanation: "In Python, methods are invoked using dot notation on the object instance: player.heal()."
+
+  - id: "comprehensions"
+    order: 13
+    track: "intermediate"
+    icon: "✨"
+    title: "List Comprehensions & Modern Python"
+    duration: "20 min"
+    summary: "Write cleaner, faster, and more expressive Python using list comprehensions, ternary expressions, and slicing tricks."
+    video:
+      id: "3dt4OGnU5sM"
+      title: "Python Tutorial: Comprehensions - How they work and why you should be using them"
+      author: "Corey Schafer"
+    concepts:
+      - heading: "What is a List Comprehension?"
+        body: "A list comprehension is a concise syntax to create a new list by transforming or filtering elements from an existing list in a single readable line."
+      - heading: "Syntax: [expression for item in list if condition]"
+        body: "Instead of writing a 4-line for loop with .append(), comprehensions let you do: squares = [x**2 for x in range(10)]."
+    code_example:
+      title: "comprehensions_demo.py"
+      code: |
+        # Modern Python: List Comprehensions
+
+        numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+        # 1. Traditional way with a loop
+        even_squares_old = []
+        for n in numbers:
+            if n % 2 == 0:
+                even_squares_old.append(n ** 2)
+        print("Traditional loop:", even_squares_old)
+
+        # 2. Modern way: List Comprehension!
+        even_squares = [n ** 2 for n in numbers if n % 2 == 0]
+        print("Comprehension:   ", even_squares)
+
+        # 3. Text transformation
+        names = ["alex", "sam", "maya", "jordan"]
+        capitalized = [name.capitalize() for name in names]
+        print("\nCapitalized names:", capitalized)
+
+        # 4. Filtering words by length
+        long_names = [name for name in capitalized if len(name) > 3]
+        print("Names longer than 3 letters:", long_names)
+    challenge: "Given a list of temperatures in Celsius: temps_c = [0, 10, 20, 25, 30, 35]. Use a single list comprehension to convert them all to Fahrenheit using the formula (c * 9/5) + 32, rounded to 1 decimal place!"
+    checklist:
+      - id: "comp_watch_video"
+        label: "Watch the Comprehensions video"
+      - id: "comp_write_basic"
+        label: "Write a basic comprehension: [x * 2 for x in nums]"
+      - id: "comp_add_filter"
+        label: "Add an if-filter: [x for x in nums if x > 5]"
+      - id: "comp_string_transform"
+        label: "Transform a list of strings with .upper() or .strip()"
+      - id: "comp_complete_challenge"
+        label: "Complete the temperature converter challenge"
+    quiz:
+      id: "quiz-comprehensions"
+      title: "Module 13 Checkpoint: Comprehensions"
+      questions:
+        - id: "q1"
+          prompt: "What will this expression produce? [x * 3 for x in [1, 2, 3]]"
+          options:
+            - "[1, 2, 3, 1, 2, 3, 1, 2, 3]"
+            - "[3, 6, 9]"
+            - "[3, 3, 3]"
+            - "9"
+          answer_index: 1
+          explanation: "Each number in [1, 2, 3] is multiplied by 3, yielding [3, 6, 9]."
+        - id: "q2"
+          prompt: "What is the main benefit of list comprehensions?"
+          options:
+            - "They let you delete files"
+            - "They make list transformation code cleaner, shorter, and often faster than manual loops"
+            - "They turn Python into JavaScript"
+            - "They make loops run backwards"
+          answer_index: 1
+          explanation: "List comprehensions provide a clean, readable, and Pythonic way to filter and transform sequences without boilerplate loop code."
+        - id: "q3"
+          prompt: "How do you filter only odd numbers from a list 'nums' using a comprehension?"
+          options:
+            - "[x for x in nums if x % 2 != 0]"
+            - "[x for x in nums where odd]"
+            - "[filter odd(x) in nums]"
+            - "[x % 2 == 1 from nums]"
+          answer_index: 0
+          explanation: "The 'if x % 2 != 0' clause at the end filters elements so only odd numbers are included in the result."
+        - id: "q4"
+          prompt: "Can list comprehensions be used to create lists of strings?"
+          options:
+            - "No, only integers and floats are supported"
+            - "Yes, any Python expression can be placed at the beginning of the comprehension"
+            - "Only if the strings are lowercase"
+            - "Only on Linux"
+          answer_index: 1
+          explanation: "List comprehensions work with all Python types, including strings, dictionaries, tuples, and custom objects."
+
+  - id: "capstone-rpg"
+    order: 14
+    track: "intermediate"
+    icon: "🏆"
+    title: "Capstone Project: Build a Text RPG Adventure"
+    duration: "40 min"
+    summary: "Bring everything together! Combine classes, loops, conditionals, file saving, and random events into a complete playable dungeon adventure game."
+    video:
+      id: "bkPms92S9Qk"
+      title: "Python Project: Text Adventure Game Walkthrough"
+      author: "Tech With Tim"
+      bonus_id: "9Os0o3wzS_I"
+      bonus_title: "Bonus Architecture Review: Functions & Modular Design"
+    concepts:
+      - heading: "The Anatomy of a Game Loop"
+        body: "Every game runs on a loop (while player.is_alive():). Each turn: display the world, ask the player for an action, update game state, and check win/loss conditions."
+      - heading: "Combining All Your Skills"
+        body: "Notice how the game below uses everything you've learned: Classes (Hero & Monster), lists (inventory), random (loot & damage), files (high score savings), and try/except (safe inputs)."
+    code_example:
+      title: "dungeon_rpg.py"
+      code: |
+        # Track 2 Capstone: Text Dungeon Adventure
+        import random
+
+        class Character:
+            def __init__(self, name, health, attack):
+                self.name = name
+                self.health = health
+                self.attack = attack
+
+            def is_alive(self):
+                return self.health > 0
+
+        def battle(hero, monster):
+            print(f"\n⚔️ A wild {monster.name} (HP: {monster.health}) appears!")
+            while hero.is_alive() and monster.is_alive():
+                dmg_to_monster = random.randint(hero.attack - 5, hero.attack + 5)
+                monster.health -= dmg_to_monster
+                print(f"You struck {monster.name} for {dmg_to_monster} damage!")
+
+                if monster.is_alive():
+                    dmg_to_hero = random.randint(monster.attack - 3, monster.attack + 3)
+                    hero.health -= dmg_to_hero
+                    print(f"{monster.name} hit you for {dmg_to_hero} damage! (Your HP: {hero.health})")
+
+            return hero.is_alive()
+
+        def main():
+            hero = Character("Explorer", 100, 20)
+            score = 0
+            inventory = ["Wooden Sword", "Health Potion"]
+
+            print("🏰 Welcome to the Dungeon of Python!")
+            print(f"Hero: {hero.name} | HP: {hero.health} | Inventory: {inventory}")
+
+            monsters = [
+                Character("Goblin", 30, 8),
+                Character("Skeleton Archer", 45, 12),
+                Character("Cave Troll", 70, 16)
+            ]
+
+            for monster in monsters:
+                if battle(hero, monster):
+                    score += 100
+                    print(f"🎉 Defeated {monster.name}! Current Score: {score}")
+                else:
+                    print(f"💀 You were defeated by {monster.name}...")
+                    break
+            else:
+                print(f"\n👑 VICTORY! You cleared the entire dungeon with {score} points!")
+
+        main()
+    challenge: "Run dungeon_rpg.py in the runner! Then add a new feature: allow the player to use their 'Health Potion' during battle to restore 30 HP!"
+    checklist:
+      - id: "capstone_watch_video"
+        label: "Watch the text adventure game project walkthrough"
+      - id: "capstone_run_game"
+        label: "Run and play dungeon_rpg.py in your browser"
+      - id: "capstone_add_feature"
+        label: "Add a potion or new monster to the game code"
+      - id: "capstone_save_score"
+        label: "Save the player's final score to a text file"
+      - id: "capstone_track2_complete"
+        label: "Finish Track 2 and celebrate completing the intermediate roadmap!"
+    quiz:
+      id: "quiz-capstone-rpg"
+      title: "Final Capstone Checkpoint: Game Architecture"
+      questions:
+        - id: "q1"
+          prompt: "What is a 'game loop' in game development?"
+          options:
+            - "A visual animation circle on screen"
+            - "A continuous while loop that repeatedly processes player actions and updates game state"
+            - "A type of list"
+            - "A tool to restart the computer"
+          answer_index: 1
+          explanation: "The game loop keeps the game running, handling player commands, running turns, and checking win/loss states until the game concludes."
+        - id: "q2"
+          prompt: "Why is Object-Oriented Programming (OOP) useful when building games with characters, enemies, and items?"
+          options:
+            - "It lets you define reusable Character templates so each monster has its own health and attacks"
+            - "It replaces the Python interpreter"
+            - "It stops players from pausing the game"
+            - "It eliminates the need for functions"
+          answer_index: 0
+          explanation: "OOP allows you to encapsulate stats, health, and combat behaviors into clean, reusable objects instead of messy separate variables."
+        - id: "q3"
+          prompt: "How does the 'else' block attached to a 'for' loop behave in Python?"
+          options:
+            - "It runs only if the loop crashes"
+            - "It runs only if the for loop completed naturally without hitting a 'break'"
+            - "It runs before the loop starts"
+            - "It runs after every single iteration"
+          answer_index: 1
+          explanation: "A for-else block executes only if the loop runs to completion without encountering a break statement (e.g. cleared all monsters!)."
+        - id: "q4"
+          prompt: "Congratulations on reaching Module 14! What is the best way to keep getting better at Python?"
+          options:
+            - "Never write code again"
+            - "Build your own projects, explore libraries, and keep practicing hands-on!"
+            - "Only memorize definitions without typing code"
+            - "Wait a year before coding"
+          answer_index: 1
+          explanation: "The secret to becoming a great developer is building real projects you care about, experimenting, and embracing trial and error!"

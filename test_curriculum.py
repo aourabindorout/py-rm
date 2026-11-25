@@ -1,7 +1,7 @@
 import unittest
 from app import app, limiter
 from db import init_db, create_or_update_user, delete_user, get_user_progress
-from curriculum import get_curriculum_data
+from curriculum import get_curriculum_data, compute_progress_summary
 
 
 class CurriculumTestCase(unittest.TestCase):
@@ -259,6 +259,48 @@ class CurriculumTestCase(unittest.TestCase):
         self.assertIn(b"lesson-code-editor", res.data)
         self.assertIn(b"lesson-terminal-output", res.data)
         self.assertIn(b"pyodide", res.data)
+
+    def test_intermediate_track_and_modules(self):
+        data = get_curriculum_data()
+        topics = data["topics"]
+        self.assertEqual(len(topics), 14)
+
+        expected_order = [
+            "setup-hello",
+            "strings-variables",
+            "numbers-math",
+            "lists-tuples",
+            "dictionaries",
+            "conditionals",
+            "loops",
+            "functions-project",
+            "files-io",
+            "errors-exceptions",
+            "standard-library",
+            "oop-classes",
+            "comprehensions",
+            "capstone-rpg",
+        ]
+        self.assertEqual([t["id"] for t in topics], expected_order)
+
+        # Check Track structure in compute_progress_summary
+        summary = compute_progress_summary({})
+        self.assertEqual(len(summary["tracks"]), 2)
+        self.assertEqual(summary["tracks"][0]["id"], "foundations")
+        self.assertEqual(len(summary["tracks"][0]["cards"]), 8)
+        self.assertEqual(summary["tracks"][1]["id"], "intermediate")
+        self.assertEqual(len(summary["tracks"][1]["cards"]), 6)
+
+        # Verify home page renders both tracks
+        self._login_and_get_csrf()
+        res = self.client.get("/")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"Track 1: Python Foundations", res.data)
+        self.assertIn(b"Track 2: Intermediate", res.data)
+        self.assertIn(b"Module 9", res.data)
+        self.assertIn(b"Reading &amp; Writing Files", res.data)
+        self.assertIn(b"Module 14", res.data)
+        self.assertIn(b"Capstone Project", res.data)
 
 
 if __name__ == "__main__":
